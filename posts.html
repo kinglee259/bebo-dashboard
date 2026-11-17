@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Posts · BEBO Dashboard</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <a class="back-link" href="./index.html">← Dashboard</a>
+        <div class="eyebrow">BEBO</div>
+        <h1 id="pageTitle">Posts</h1>
+        <p id="pageSubtitle" class="muted"></p>
+      </div>
+      <div class="top-actions"><button id="refreshBtn" class="secondary">Refresh</button></div>
+    </header>
+    <main>
+      <section id="postList" class="post-list"></section>
+      <div id="emptyState" class="empty-state hidden">No posts found for this selection.</div>
+    </main>
+  </div>
+  <script type="module" src="./posts.js"></script>
+</body>
+</html>
