@@ -118,3 +118,15 @@
 .posts-select{appearance:none;-webkit-appearance:none;min-width:58px;border:1px solid var(--line);border-radius:8px;padding:6px 22px 6px 9px;background:#20262d;color:var(--accent);font-size:12px;font-weight:900;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,#8e98a4 50%),linear-gradient(135deg,#8e98a4 50%,transparent 50%);background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
 .posts-select:disabled{opacity:.55;cursor:wait}
 @media(max-width:700px){.posts-select{min-width:64px;padding-top:5px;padding-bottom:5px}}
+
+/* Refined premium status + engagement markers */
+.group-star{display:inline-block;margin-left:5px;font-size:9px;line-height:1;vertical-align:1px;user-select:none}
+.group-star.best{color:#f2cf69;text-shadow:0 0 6px rgba(242,207,105,.24)}
+.group-star.watch{color:#7f7661;opacity:.72;text-shadow:none}
+.status.idle{color:#7f8995;font-weight:750}
+.status.more{color:#77d8c9;font-weight:800;text-shadow:0 0 7px rgba(119,216,201,.08)}
+.status.waiting{color:#c8b275;font-weight:800;cursor:help}
+.status.review{color:#d9988e;font-weight:800;cursor:help}
+.status.met{color:#7ed9a0;text-shadow:0 0 7px rgba(126,217,160,.08)}
+.status.over{color:#8dbbe8}
+.kpi-excluded{background:transparent;color:#66707b;padding:0;font-size:13px;letter-spacing:0}
