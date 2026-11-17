@@ -134,7 +134,7 @@ function timeValue(post){return post.time_is_signal?Number.MAX_SAFE_INTEGER:new 
 
 function renderRow(p){
   const g=groups.get(p.group_id),pr=promptsById.get(p.prompt_id)||promptsByCode.get(p.prompt_code),m=latestMetric.get(p.id);
-  const code=p.prompt_code||pr?.prompt_id||'—',quote=pr?.content||pr?.title||'—';
+  const code=p.prompt_code||pr?.prompt_id||'—',title=pr?.title||'',quote=pr?.content||'—';
   const timeHtml=p.time_is_signal
     ? '<div class="missing-time-wrap"><input class="post-time-input" type="time" data-post-id="'+p.id+'" aria-label="Enter yesterday time for '+esc(code)+'"><span class="time-save-state" data-time-state="'+p.id+'"></span></div>'
     : esc(fmtPostTime(p.submitted_at));
@@ -147,7 +147,7 @@ function renderRow(p){
   }).join('');
   return '<tr class="report-data-row">'+
     '<td data-label="Time" class="report-time '+(p.time_is_signal?'missing-time':'')+'">'+timeHtml+'</td>'+
-    '<td data-label="Prompt ID" class="report-prompt-id"><strong>'+esc(code)+'</strong></td>'+
+    '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong><span>'+esc(title||'—')+'</span></td>'+
     '<td data-label="Quote" class="report-quote" title="'+esc(quote)+'">'+esc(quote)+'</td>'+
     '<td data-label="Group" class="report-group">'+groupHtml+'</td>'+
     metrics+
