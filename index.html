@@ -7,22 +7,7 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div id="authView" class="auth-shell">
-    <div class="auth-card">
-      <div class="brand-mark">B</div>
-      <h1>BEBO Dashboard</h1>
-      <p class="muted">Facebook Group posting tracker</p>
-      <form id="authForm">
-        <label>Email<input id="email" type="email" autocomplete="email" required /></label>
-        <label>Password<input id="password" type="password" autocomplete="current-password" minlength="6" required /></label>
-        <button class="primary" type="submit">Sign in</button>
-      </form>
-      <button id="signUpBtn" class="secondary full" type="button">Create account once</button>
-      <p id="authMessage" class="message"></p>
-    </div>
-  </div>
-
-  <div id="appView" class="app hidden">
+  <div class="app">
     <header class="topbar">
       <div>
         <div class="eyebrow">BEBO</div>
@@ -30,7 +15,6 @@
       </div>
       <div class="top-actions">
         <button id="refreshBtn" class="secondary">Refresh</button>
-        <button id="signOutBtn" class="ghost">Sign out</button>
       </div>
     </header>
 
