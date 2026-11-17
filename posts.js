@@ -38,6 +38,8 @@ function render(){
   $('postsCrumbGroup').classList.toggle('hidden',!activeGroup);
   $('postsCrumbGroupName').classList.toggle('hidden',!activeGroup);
   $('postsCrumbGroupName').textContent=activeGroup?.group_code||'';
+  const panel=$('postRows')?.closest('.history-panel');
+  if(panel){panel.className='history-panel'+(activeGroup?' tier-surface-'+(activeGroup.engagement_tier||'unranked'):'');}
 
   $('postRows').innerHTML=list.map(post=>{
     const group=groupsById.get(post.group_id);
@@ -48,7 +50,8 @@ function render(){
     const groupHtml=group
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener"><strong>'+esc(group.group_code)+'</strong><span>'+esc(group.group_name)+'</span></a>'
       : '—';
-    return '<tr class="history-row">'+
+    const tier=group?.engagement_tier||'unranked';
+    return '<tr class="history-row tier-row-'+esc(tier)+'">'+
       '<td data-label="Date / Time" class="history-time '+(post.time_is_signal?'signal-time':'')+'">'+esc(fmtDateTime(post.submitted_at,post.time_is_signal))+'</td>'+
       '<td data-label="Prompt" class="history-prompt"><strong>'+esc(code)+'</strong><span>'+esc(title)+'</span></td>'+
       '<td data-label="Group" class="history-group">'+groupHtml+'</td>'+
@@ -70,7 +73,7 @@ async function load(){
 
     const [postsRes,groupsRes,promptsRes]=await Promise.all([
       postsQuery,
-      supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status').order('group_code',{ascending:true}),
+      supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').order('group_code',{ascending:true}),
       supabase.from('prompts').select('id,prompt_id,title')
     ]);
     for(const r of [postsRes,groupsRes,promptsRes]) if(r.error) throw r.error;

@@ -163,6 +163,8 @@ function renderRow(p){
 function render(){
   const sort=$('sortBy').value;
   const groupBy=$('groupBy').value;
+  const table=document.querySelector('.report-table');
+  table?.classList.toggle('grouped-by-group',groupBy==='group');
   const list=[...loadedPosts];
   $('reportCount').textContent=list.length+' post'+(list.length===1?'':'s');
   $('reportEmpty').classList.toggle('hidden',list.length>0);
@@ -196,7 +198,8 @@ function render(){
     const groupTitle=group
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener">'+esc(group.group_code)+' · '+esc(group.group_name)+'</a>'
       : esc(unresolvedGroupLabel(sample));
-    chunks.push('<tr class="report-group-header"><td colspan="8"><div><strong>'+groupTitle+'</strong></div></td></tr>');
+    const tier=group?.engagement_tier||'unranked';
+    chunks.push('<tr class="report-group-header tier-header-'+esc(tier)+'"><td colspan="8"><div><strong>'+groupTitle+'</strong><span class="report-tier-label">'+esc(String(tier).toUpperCase())+'</span></div></td></tr>');
     chunks.push(rows.map(renderRow).join(''));
   }
   $('reportRows').innerHTML=chunks.join('');
@@ -253,7 +256,7 @@ async function load(){
   const postIds=loadedPosts.map(p=>p.id);
 
   const [gRes,pIdRes,pCodeRes,mRes]=await Promise.all([
-    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status').in('id',groupIds):Promise.resolve({data:[],error:null}),
+    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').in('id',groupIds):Promise.resolve({data:[],error:null}),
     promptIds.length?supabase.from('prompts').select('id,prompt_id,title,content').in('id',promptIds):Promise.resolve({data:[],error:null}),
     promptCodes.length?supabase.from('prompts').select('id,prompt_id,title,content').in('prompt_id',promptCodes):Promise.resolve({data:[],error:null}),
     postIds.length?supabase.from('post_metrics').select('*').in('post_history_id',postIds).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null})
