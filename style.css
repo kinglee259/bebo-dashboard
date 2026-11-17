@@ -535,3 +535,21 @@ th,td{padding:9px 8px}
 .report-prompt{width:104px;min-width:92px}
 .report-prompt strong{margin-bottom:0}
 .report-prompt span{display:none}
+
+
+/* Group engagement tiers */
+.group-tier{display:inline-block;margin-left:5px;font-size:9px;font-weight:900;letter-spacing:-.7px;line-height:1;vertical-align:1px;white-space:nowrap}
+.group-tier.tier-s{color:#f2dd8f;text-shadow:0 0 4px rgba(242,221,143,.85),0 0 9px rgba(143,216,179,.28)}
+.group-tier.tier-a{color:#d5c781;text-shadow:0 0 4px rgba(213,199,129,.42);opacity:.88}
+.group-tier.tier-b{color:#9ed5b8;text-shadow:0 0 4px rgba(158,213,184,.28);opacity:.82}
+.group-tier.tier-c{color:#737d87;letter-spacing:.03em;text-shadow:none}
+.group-tier.tier-unranked{color:#4f5964;letter-spacing:.03em;text-shadow:none}
+
+/* Custom report date */
+.report-date-field{flex:0 0 auto}
+.report-date-input{width:126px;height:30px;padding:4px 7px;border:1px solid #303a44;border-radius:7px;background:#12171d;color:#dce3e9;font:inherit;font-size:10px;outline:none;color-scheme:dark}
+.report-date-input:hover,.report-date-input:focus{border-color:#5e7e8f;box-shadow:0 0 0 2px rgba(127,200,255,.06)}
+@media(max-width:700px){
+  .report-date-field{flex:0 0 145px}
+  .report-date-input{width:100%;height:29px}
+}
