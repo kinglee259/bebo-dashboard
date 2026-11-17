@@ -268,7 +268,7 @@ async function loadDay(day){
         <td class="group-cell" data-label="Group"><a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View posts for ${esc(g.group_code)}">${esc(g.group_code)}</a><a class="group-name-link" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
         <td data-label="Approval">${approvalSelect(g)}</td>
         <td data-label="Posts">${postCell}</td>
-        <td data-label="Status" class="status ${g.state.cls}" ${g.state.tip ? `title="${esc(g.state.tip)}"` : ''}>${g.state.label}</td>
+        <td data-label="Status" class="status ${g.state.cls} ${g.state.tip ? 'status-tip-target' : ''}" ${g.state.tip ? `data-tip="${esc(g.state.tip)}" tabindex="0"` : ''}><span class="status-label">${g.state.label}</span></td>
         <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
   }).join('');
