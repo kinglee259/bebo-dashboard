@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BEBO Dashboard</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="authView" class="auth-shell">
+    <div class="auth-card">
+      <div class="brand-mark">B</div>
+      <h1>BEBO Dashboard</h1>
+      <p class="muted">Facebook Group posting tracker</p>
+      <form id="authForm">
+        <label>Email<input id="email" type="email" autocomplete="email" required /></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" minlength="6" required /></label>
+        <button class="primary" type="submit">Sign in</button>
+      </form>
+      <button id="signUpBtn" class="secondary full" type="button">Create account once</button>
+      <p id="authMessage" class="message"></p>
+    </div>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">BEBO</div>
+        <h1>Posting Dashboard</h1>
+      </div>
+      <div class="top-actions">
+        <button id="refreshBtn" class="secondary">Refresh</button>
+        <button id="signOutBtn" class="ghost">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-row">
+        <div>
+          <div id="dateLabel" class="date-label"></div>
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-day="today">Today</button>
+            <button class="tab" data-day="yesterday">Yesterday</button>
+          </div>
+        </div>
+        <div class="kpi-copy">Daily KPI: <strong id="kpiRange">2–4 posts / group</strong></div>
+      </section>
+
+      <section class="cards-grid">
+        <article class="card"><span>Posts</span><strong id="postsCount">—</strong><small id="postsGoal">—</small></article>
+        <article class="card"><span>Groups posted</span><strong id="groupsPosted">—</strong><small id="groupsRemaining">—</small></article>
+        <article class="card"><span>Groups at minimum KPI</span><strong id="groupsAtKpi">—</strong><small id="groupsAtKpiPct">—</small></article>
+        <article class="card"><span>Approval</span><strong id="approvalCount">—</strong><small id="approvalBreakdown">—</small></article>
+      </section>
+
+      <section class="progress-panel">
+        <div class="progress-head"><span>Minimum daily posting KPI</span><strong id="progressText">—</strong></div>
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+      </section>
+
+      <section class="list-panel">
+        <div class="list-head">
+          <div>
+            <h2>Groups</h2>
+            <p class="muted">Sorted by what needs attention first. Auto-approval groups are prioritized.</p>
+          </div>
+          <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>KPI</th><th>Status</th></tr></thead>
+            <tbody id="groupRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
