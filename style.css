@@ -491,3 +491,27 @@ th,td{padding:9px 8px}
   .metric-input{width:100%;padding:5px 6px}
   .report-group-header td{padding:7px 6px!important}
 }
+
+
+/* Report quote-first compact layout */
+.report-table{min-width:920px}
+.report-prompt-id{width:92px}
+.report-quote{min-width:300px;max-width:430px;color:#dce3e9;font-size:11px;line-height:1.28}
+.report-group{min-width:128px;max-width:155px}
+.report-group span{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report-metric-cell{width:58px}
+.metric-input{width:50px;padding:4px 5px;text-align:center}
+.report-check-cell{min-width:64px;width:72px}
+.check-now-btn{width:26px;height:26px;padding:0;display:inline-grid;place-items:center;border-radius:7px;font-size:13px;line-height:1}
+.checked-at{font-size:7px;white-space:nowrap}
+.save-state{font-size:7px}
+.report-title{display:none}
+
+@media(max-width:700px){
+  .report-quote,.report-prompt-id,.report-group,.report-time,.report-check-cell{grid-column:1/-1}
+  .report-quote{min-width:0;max-width:none;font-size:11px}
+  .report-metric-cell{width:auto}
+  .metric-input{width:100%;padding:5px}
+  .report-check-cell{width:auto;min-width:0}
+  .check-now-btn{width:28px;height:28px}
+}
