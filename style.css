@@ -213,3 +213,82 @@ th,td{padding:9px 8px}
 @media(max-width:360px){
   .cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* KPI cards: softer color separation + premium depth */
+.cards-grid .card:nth-child(1){
+  --card-accent:#7fc8ff;
+  --card-tint:rgba(74,142,204,.20);
+  --card-glow:rgba(95,177,255,.16);
+}
+.cards-grid .card:nth-child(2){
+  --card-accent:#8fd8b3;
+  --card-tint:rgba(65,135,105,.20);
+  --card-glow:rgba(95,210,155,.14);
+}
+.cards-grid .card:nth-child(3){
+  --card-accent:#d9c58a;
+  --card-tint:rgba(140,119,69,.20);
+  --card-glow:rgba(225,198,116,.13);
+}
+.cards-grid .card:nth-child(4){
+  --card-accent:#c9a7e8;
+  --card-tint:rgba(116,85,150,.20);
+  --card-glow:rgba(193,142,240,.13);
+}
+.cards-grid .card{
+  isolation:isolate;
+  border-color:color-mix(in srgb,var(--card-accent) 20%,#283039 80%);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.012) 33%,rgba(0,0,0,.07) 100%),
+    linear-gradient(135deg,var(--card-tint),rgba(18,22,27,.76) 48%,#101419 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.085),
+    inset 0 -1px 0 rgba(0,0,0,.30),
+    0 10px 24px rgba(0,0,0,.22),
+    0 0 18px var(--card-glow);
+}
+.cards-grid .card::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:1px 1px auto 1px;
+  height:46%;
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);
+  pointer-events:none;
+}
+.cards-grid .card::after{
+  inset:auto 8% -30px 8%;
+  height:52px;
+  background:radial-gradient(ellipse at center,var(--card-glow),transparent 70%);
+}
+.cards-grid .card span{
+  color:color-mix(in srgb,var(--card-accent) 62%,#c3cbd4 38%);
+}
+.cards-grid .card strong{
+  color:var(--card-accent);
+  text-shadow:0 0 12px var(--card-glow);
+}
+.cards-grid .card small{
+  color:#8d98a5;
+}
+.cards-grid .clickable-card:hover{
+  border-color:color-mix(in srgb,var(--card-accent) 34%,#313942 66%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.28),
+    0 12px 28px rgba(0,0,0,.24),
+    0 0 22px var(--card-glow);
+}
+@media(max-width:700px){
+  .cards-grid .card{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.075),
+      inset 0 -1px 0 rgba(0,0,0,.24),
+      0 6px 16px rgba(0,0,0,.20),
+      0 0 13px var(--card-glow);
+  }
+  .cards-grid .card strong{
+    text-shadow:0 0 9px var(--card-glow);
+  }
+}
