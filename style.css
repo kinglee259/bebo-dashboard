@@ -767,3 +767,96 @@ th,td{padding:9px 8px}
   .approval-select{width:82px}
   .posts-select{width:46px}
 }
+
+
+/* Mobile cleanup: compact Posts/Report controls and safer Home rows */
+@media(max-width:700px){
+  /* Home: remove destructive action from the compact mobile scan view */
+  #groupsPanel .row-actions{display:none!important}
+  #groupsPanel .tier-block td[data-label="Action"]{display:none!important}
+  #groupsPanel .tier-block tr{padding-right:9px}
+
+  /* Posts: date + group stay readable instead of fighting for flex width */
+  .posts-toolbar{
+    display:grid;
+    grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+    align-items:end;
+    gap:7px 8px;
+  }
+  .posts-toolbar .toolbar-field{min-width:0;flex:none}
+  .posts-toolbar .posts-date-field{min-width:0;flex:none}
+  .posts-toolbar .posts-date-input,
+  .posts-toolbar .toolbar-select{width:100%;min-width:0}
+  .posts-toolbar .report-count{
+    grid-column:1/-1;
+    justify-self:end;
+    margin-top:-1px;
+    font-size:9px
+  }
+
+  /* Report: tabs get their own row, filters become a stable compact grid */
+  .report-toolbar{
+    display:grid;
+    grid-template-columns:1fr;
+    align-items:stretch;
+    gap:8px;
+  }
+  .report-toolbar-left{width:100%;display:block}
+  .report-toolbar-left>div{width:100%}
+  .report-toolbar .date-label{margin-bottom:6px}
+  .report-toolbar .tabs{max-width:100%}
+
+  .report-toolbar-right{
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:end;
+    gap:6px 8px;
+  }
+  .report-toolbar-field{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:3px;
+    min-width:0;
+    flex:none
+  }
+  .report-toolbar-field>span{
+    font-size:7px;
+    line-height:1;
+    color:#69747f
+  }
+  .report-toolbar .toolbar-select,
+  .report-toolbar .report-date-input{
+    width:100%;
+    min-width:0;
+    height:30px;
+    padding-top:4px;
+    padding-bottom:4px
+  }
+  .report-toolbar .report-date-field{grid-column:1/-1;min-width:0;flex:none}
+  .report-toolbar .report-count{
+    grid-column:1/-1;
+    justify-self:end;
+    padding:0;
+    margin-top:-1px;
+    font-size:9px
+  }
+
+  /* Keep controls dark and calm when focused on touch browsers */
+  .posts-toolbar select:focus,
+  .report-toolbar select:focus,
+  .posts-toolbar input:focus,
+  .report-toolbar input:focus{
+    background-color:#12171d!important;
+    color:#dce3e9!important;
+    box-shadow:0 0 0 1px rgba(110,130,145,.22)!important
+  }
+}
+
+@media(max-width:390px){
+  .posts-toolbar{grid-template-columns:1fr}
+  .posts-toolbar .report-count{grid-column:1}
+  .report-toolbar-right{grid-template-columns:1fr}
+  .report-toolbar .report-date-field,
+  .report-toolbar .report-count{grid-column:1}
+}
