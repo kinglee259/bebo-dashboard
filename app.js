@@ -32,6 +32,7 @@ function formatVnDate(date) {
 
 function esc(s='') { return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function approvalRank(mode){ return mode === 'auto' ? 0 : mode === 'manual' ? 1 : 2; }
+function tierRank(tier){ return tier === 's' ? 0 : tier === 'a' ? 1 : tier === 'b' ? 2 : tier === 'c' ? 3 : 4; }
 
 function showToast(message, type='ok'){
   let el = document.getElementById('toast');
@@ -184,9 +185,12 @@ function kpiState(count){
 }
 
 function engagementStar(group){
-  if(group.engagement_tier === 'best') return '<span class="group-star best" title="Best engagement" aria-label="Best engagement">★</span>';
-  if(group.engagement_tier === 'watch') return '<span class="group-star watch" title="Good signal" aria-label="Good signal">★</span>';
-  return '';
+  const tier=group.engagement_tier;
+  if(tier==='s') return '<span class="group-tier tier-s" title="S · breakout" aria-label="S tier">★★★</span>';
+  if(tier==='a') return '<span class="group-tier tier-a" title="A · strong engagement" aria-label="A tier">★★</span>';
+  if(tier==='b') return '<span class="group-tier tier-b" title="B · light engagement" aria-label="B tier">★</span>';
+  if(tier==='c') return '<span class="group-tier tier-c" title="C · tested, weak" aria-label="C tier">--</span>';
+  return '<span class="group-tier tier-unranked" title="Unranked · follow" aria-label="Unranked">---</span>';
 }
 
 async function loadGroups(){
@@ -253,6 +257,7 @@ async function loadDay(day){
     const state = workflowState(g) || kpiState(count);
     return {...g, count, state};
   }).sort((a,b) =>
+    tierRank(a.engagement_tier) - tierRank(b.engagement_tier) ||
     approvalRank(a.approval_mode) - approvalRank(b.approval_mode) ||
     a.group_name.localeCompare(b.group_name, 'en', {sensitivity:'base'})
   );
