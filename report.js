@@ -114,6 +114,10 @@ function unresolvedGroupLabel(post){
   return match?.[1]||'Unmapped';
 }
 function groupLabel(post){return groups.get(post.group_id)?.group_name||unresolvedGroupLabel(post);}
+function shortGroupName(name=''){
+  const words=String(name).trim().split(/\s+/).filter(Boolean);
+  return words.length>3?words.slice(0,3).join(' ')+'…':words.join(' ');
+}
 function groupKey(post){return post.group_id?'g:'+post.group_id:'u:'+unresolvedGroupLabel(post);}
 
 function postComparator(a,b,sort){
@@ -130,24 +134,24 @@ function timeValue(post){return post.time_is_signal?Number.MAX_SAFE_INTEGER:new 
 
 function renderRow(p){
   const g=groups.get(p.group_id),pr=promptsById.get(p.prompt_id)||promptsByCode.get(p.prompt_code),m=latestMetric.get(p.id);
-  const code=p.prompt_code||pr?.prompt_id||'—',title=pr?.title||'—';
+  const code=p.prompt_code||pr?.prompt_id||'—',quote=pr?.content||pr?.title||'—';
   const timeHtml=p.time_is_signal
     ? '<div class="missing-time-wrap"><input class="post-time-input" type="time" data-post-id="'+p.id+'" aria-label="Enter yesterday time for '+esc(code)+'"><span class="time-save-state" data-time-state="'+p.id+'"></span></div>'
     : esc(fmtPostTime(p.submitted_at));
   const groupHtml=g
-    ? '<a class="report-group-link" href="'+esc(g.group_url||'#')+'" target="_blank" rel="noopener"><strong>'+esc(g.group_code)+'</strong><span>'+esc(g.group_name)+'</span></a>'
-    : '<span class="report-unmapped-group">'+esc(unresolvedGroupLabel(p))+'</span>';
-  const metrics=[['likes_count','Like'],['comments_count','Comment'],['shares_count','Share'],['views_count','View']].map(pair=>{
+    ? '<a class="report-group-link" href="'+esc(g.group_url||'#')+'" target="_blank" rel="noopener" title="'+esc(g.group_name)+'"><strong>'+esc(g.group_code)+'</strong><span>'+esc(shortGroupName(g.group_name))+'</span></a>'
+    : '<span class="report-unmapped-group" title="'+esc(unresolvedGroupLabel(p))+'">'+esc(shortGroupName(unresolvedGroupLabel(p)))+'</span>';
+  const metrics=[['likes_count','Like'],['comments_count','Comment'],['shares_count','Share']].map(pair=>{
     const field=pair[0],label=pair[1];
     return '<td data-label="'+label+'" class="report-metric-cell"><input class="metric-input" type="number" inputmode="numeric" min="0" step="1" data-post-id="'+p.id+'" data-field="'+field+'" value="'+esc(val(m?.[field]))+'" aria-label="'+label+' for '+esc(code)+'"></td>';
   }).join('');
   return '<tr class="report-data-row">'+
     '<td data-label="Time" class="report-time '+(p.time_is_signal?'missing-time':'')+'">'+timeHtml+'</td>'+
     '<td data-label="Prompt ID" class="report-prompt-id"><strong>'+esc(code)+'</strong></td>'+
-    '<td data-label="Title" class="report-title">'+esc(title)+'</td>'+
+    '<td data-label="Quote" class="report-quote" title="'+esc(quote)+'">'+esc(quote)+'</td>'+
     '<td data-label="Group" class="report-group">'+groupHtml+'</td>'+
     metrics+
-    '<td data-label="Checked" class="report-check-cell"><button class="check-now-btn" data-action="check" data-post-id="'+p.id+'">Check now</button><span class="checked-at" data-checked-at="'+p.id+'">'+esc(fmtChecked(m?.checked_at))+'</span><span class="save-state" data-save-state="'+p.id+'"></span></td>'+
+    '<td data-label="Checked" class="report-check-cell"><button class="check-now-btn" data-action="check" data-post-id="'+p.id+'" title="Check now" aria-label="Check now">✓</button><span class="checked-at" data-checked-at="'+p.id+'">'+esc(fmtChecked(m?.checked_at))+'</span><span class="save-state" data-save-state="'+p.id+'"></span></td>'+
   '</tr>';
 }
 
@@ -187,7 +191,7 @@ function render(){
     const groupTitle=group
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener">'+esc(group.group_code)+' · '+esc(group.group_name)+'</a>'
       : esc(unresolvedGroupLabel(sample));
-    chunks.push('<tr class="report-group-header"><td colspan="9"><div><strong>'+groupTitle+'</strong><span>'+rows.length+' post'+(rows.length===1?'':'s')+'</span></div></td></tr>');
+    chunks.push('<tr class="report-group-header"><td colspan="8"><div><strong>'+groupTitle+'</strong><span>'+rows.length+' post'+(rows.length===1?'':'s')+'</span></div></td></tr>');
     chunks.push(rows.map(renderRow).join(''));
   }
   $('reportRows').innerHTML=chunks.join('');
@@ -225,8 +229,8 @@ async function load(){
 
   const [gRes,pIdRes,pCodeRes,mRes]=await Promise.all([
     groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url').in('id',groupIds):Promise.resolve({data:[],error:null}),
-    promptIds.length?supabase.from('prompts').select('id,prompt_id,title').in('id',promptIds):Promise.resolve({data:[],error:null}),
-    promptCodes.length?supabase.from('prompts').select('id,prompt_id,title').in('prompt_id',promptCodes):Promise.resolve({data:[],error:null}),
+    promptIds.length?supabase.from('prompts').select('id,prompt_id,title,content').in('id',promptIds):Promise.resolve({data:[],error:null}),
+    promptCodes.length?supabase.from('prompts').select('id,prompt_id,title,content').in('prompt_id',promptCodes):Promise.resolve({data:[],error:null}),
     postIds.length?supabase.from('post_metrics').select('*').in('post_history_id',postIds).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null})
   ]);
   for(const r of [gRes,pIdRes,pCodeRes,mRes])if(r.error)throw r.error;
@@ -253,7 +257,7 @@ $('groupBy').addEventListener('change',render);
 document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',async()=>{
   selectedDay=btn.dataset.day;
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));
-  try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="9">Could not load report: '+esc(e.message)+'</td></tr>';}
+  try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="8">Could not load report: '+esc(e.message)+'</td></tr>';}
 }));
 
-try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="9">Could not load report: '+esc(e.message)+'</td></tr>';}
+try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="8">Could not load report: '+esc(e.message)+'</td></tr>';}
