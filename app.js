@@ -33,6 +33,89 @@ function formatVnDate(date) {
 function esc(s='') { return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function approvalRank(mode){ return mode === 'auto' ? 0 : mode === 'unknown' ? 1 : 2; }
 
+function showToast(message, type='ok'){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.className = `toast show ${type}`;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.className = 'toast', 2200);
+}
+
+function approvalSelect(group){
+  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" aria-label="Approval mode for ${esc(group.group_name)}">
+    <option value="auto" ${group.approval_mode==='auto'?'selected':''}>Auto</option>
+    <option value="manual" ${group.approval_mode==='manual'?'selected':''}>Manual</option>
+    <option value="unknown" ${group.approval_mode==='unknown'?'selected':''}>Unknown</option>
+  </select>`;
+}
+
+async function updateApproval(selectEl){
+  const groupId = Number(selectEl.dataset.groupId);
+  const previous = selectEl.dataset.current;
+  const next = selectEl.value;
+  if(!groupId || next === previous) return;
+
+  selectEl.disabled = true;
+  const patch = {approval_mode: next, updated_at: new Date().toISOString()};
+  if(next !== 'manual'){
+    patch.workflow_status = 'active';
+    patch.workflow_status_since = null;
+  }
+
+  const { data, error } = await supabase.from('facebook_groups')
+    .update(patch)
+    .eq('id', groupId)
+    .select('id,approval_mode')
+    .single();
+
+  if(error || !data){
+    selectEl.value = previous;
+    selectEl.disabled = false;
+    showToast(error?.message || 'Could not update approval', 'error');
+    return;
+  }
+
+  selectEl.dataset.current = next;
+  selectEl.className = `approval-select ${next}`;
+  selectEl.disabled = false;
+  showToast('Approval updated');
+  await refresh();
+}
+
+async function removeGroup(button){
+  const groupId = Number(button.dataset.groupId);
+  const groupName = button.dataset.groupName || 'this group';
+  if(!groupId) return;
+  if(!confirm(`Remove "${groupName}" from the active dashboard? Post history will be kept.`)) return;
+
+  button.disabled = true;
+  const { data, error } = await supabase.from('facebook_groups')
+    .update({
+      posting_status:'left',
+      workflow_status:'active',
+      workflow_status_since:null,
+      updated_at:new Date().toISOString()
+    })
+    .eq('id', groupId)
+    .select('id,posting_status')
+    .single();
+
+  if(error || !data){
+    button.disabled = false;
+    showToast(error?.message || 'Could not remove group', 'error');
+    return;
+  }
+
+  showToast('Group removed');
+  await refresh();
+}
+
 function effectiveWorkflow(group){
   if(group.workflow_status === 'following_approval' && group.workflow_status_since){
     const ageMs = Date.now() - new Date(group.workflow_status_since).getTime();
@@ -129,11 +212,12 @@ async function loadDay(day){
     const kpiCell = g.state.excluded ? '<span class="kpi-excluded">Excluded</span>' : `${DAILY_MIN_POSTS}–${DAILY_TARGET_POSTS}`;
     return `
       <tr>
-        <td class="group-cell"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a></td>
-        <td><span class="badge ${esc(g.approval_mode)}">${esc(g.approval_mode)}</span></td>
-        <td>${postCell}</td>
-        <td>${kpiCell}</td>
-        <td class="status ${g.state.cls}">${g.state.label}</td>
+        <td class="group-cell" data-label="Group"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a></td>
+        <td data-label="Approval">${approvalSelect(g)}</td>
+        <td data-label="Posts">${postCell}</td>
+        <td data-label="KPI">${kpiCell}</td>
+        <td data-label="Status" class="status ${g.state.cls}">${g.state.label}</td>
+        <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
   }).join('');
 }
@@ -154,6 +238,14 @@ $('postsCard').addEventListener('click', () => {
   if(currentDateKey) location.href = `./posts.html?date=${encodeURIComponent(currentDateKey)}`;
 });
 $('refreshBtn').addEventListener('click', refresh);
+$('groupRows').addEventListener('change', (e) => {
+  const select = e.target.closest('[data-action="approval"]');
+  if(select) updateApproval(select);
+});
+$('groupRows').addEventListener('click', (e) => {
+  const button = e.target.closest('[data-action="remove"]');
+  if(button) removeGroup(button);
+});
 document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', async () => {
   selectedDay = btn.dataset.day;
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));
