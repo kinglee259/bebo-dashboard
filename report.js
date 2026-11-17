@@ -134,7 +134,7 @@ function timeValue(post){return post.time_is_signal?Number.MAX_SAFE_INTEGER:new 
 
 function renderRow(p){
   const g=groups.get(p.group_id),pr=promptsById.get(p.prompt_id)||promptsByCode.get(p.prompt_code),m=latestMetric.get(p.id);
-  const code=p.prompt_code||pr?.prompt_id||'—',title=pr?.title||'',quote=pr?.content||'—';
+  const code=p.prompt_code||pr?.prompt_id||'—',quote=pr?.content||'—';
   const timeHtml=p.time_is_signal
     ? '<div class="missing-time-wrap"><input class="post-time-input" type="time" data-post-id="'+p.id+'" aria-label="Enter yesterday time for '+esc(code)+'"><span class="time-save-state" data-time-state="'+p.id+'"></span></div>'
     : esc(fmtPostTime(p.submitted_at));
@@ -147,7 +147,7 @@ function renderRow(p){
   }).join('');
   return '<tr class="report-data-row">'+
     '<td data-label="Time" class="report-time '+(p.time_is_signal?'missing-time':'')+'">'+timeHtml+'</td>'+
-    '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong><span>'+esc(title||'—')+'</span></td>'+
+    '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong></td>'+
     '<td data-label="Quote" class="report-quote" title="'+esc(quote)+'">'+esc(quote)+'</td>'+
     '<td data-label="Group" class="report-group">'+groupHtml+'</td>'+
     metrics+
@@ -191,7 +191,7 @@ function render(){
     const groupTitle=group
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener">'+esc(group.group_code)+' · '+esc(group.group_name)+'</a>'
       : esc(unresolvedGroupLabel(sample));
-    chunks.push('<tr class="report-group-header"><td colspan="8"><div><strong>'+groupTitle+'</strong><span>'+rows.length+' post'+(rows.length===1?'':'s')+'</span></div></td></tr>');
+    chunks.push('<tr class="report-group-header"><td colspan="8"><div><strong>'+groupTitle+'</strong></div></td></tr>');
     chunks.push(rows.map(renderRow).join(''));
   }
   $('reportRows').innerHTML=chunks.join('');
@@ -228,14 +228,17 @@ async function load(){
   const postIds=loadedPosts.map(p=>p.id);
 
   const [gRes,pIdRes,pCodeRes,mRes]=await Promise.all([
-    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url').in('id',groupIds):Promise.resolve({data:[],error:null}),
+    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status').in('id',groupIds):Promise.resolve({data:[],error:null}),
     promptIds.length?supabase.from('prompts').select('id,prompt_id,title,content').in('id',promptIds):Promise.resolve({data:[],error:null}),
     promptCodes.length?supabase.from('prompts').select('id,prompt_id,title,content').in('prompt_id',promptCodes):Promise.resolve({data:[],error:null}),
     postIds.length?supabase.from('post_metrics').select('*').in('post_history_id',postIds).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null})
   ]);
   for(const r of [gRes,pIdRes,pCodeRes,mRes])if(r.error)throw r.error;
 
-  groups=new Map((gRes.data||[]).map(x=>[x.id,x]));
+  const activeGroups=(gRes.data||[]).filter(x=>x.posting_status!=='left');
+  const hiddenGroupIds=new Set((gRes.data||[]).filter(x=>x.posting_status==='left').map(x=>x.id));
+  loadedPosts=loadedPosts.filter(p=>!hiddenGroupIds.has(p.group_id));
+  groups=new Map(activeGroups.map(x=>[x.id,x]));
   promptsById=new Map((pIdRes.data||[]).map(x=>[x.id,x]));
   promptsByCode=new Map((pCodeRes.data||[]).map(x=>[x.prompt_id,x]));
   latestMetric=new Map();
