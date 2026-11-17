@@ -62,8 +62,12 @@ async function updateApproval(selectEl){
   if(!groupId || next === previous) return;
 
   selectEl.disabled = true;
-  const patch = {approval_mode: next, updated_at: new Date().toISOString()};
-  if(next !== 'manual'){
+  const nowIso = new Date().toISOString();
+  const patch = {approval_mode: next, updated_at: nowIso};
+  if(next === 'manual'){
+    patch.workflow_status = 'following_approval';
+    patch.workflow_status_since = nowIso;
+  }else{
     patch.workflow_status = 'active';
     patch.workflow_status_since = null;
   }
@@ -128,10 +132,10 @@ function workflowState(group){
   const workflow = effectiveWorkflow(group);
   if(workflow === 'review_48h') return {rank:0,label:'Review 48h+',cls:'none',excluded:true};
   if(workflow === 'following_approval'){
-    const hours = group.workflow_status_since
-      ? Math.max(0, Math.floor((Date.now() - new Date(group.workflow_status_since).getTime()) / 3600_000))
+    const hoursLeft = group.workflow_status_since
+      ? Math.max(0, Math.ceil((48 * 3600_000 - (Date.now() - new Date(group.workflow_status_since).getTime())) / 3600_000))
       : null;
-    return {rank:1,label:hours === null ? 'Following approval' : `Following approval · ${hours}h`,cls:'under',excluded:true};
+    return {rank:1,label:hoursLeft === null ? 'Following approval' : `Following approval · ${hoursLeft}h left`,cls:'under',excluded:true};
   }
   return null;
 }
@@ -197,7 +201,7 @@ async function loadDay(day){
   $('postsNeededHint').textContent = postsStillNeeded === 0 ? 'minimum KPI complete' : 'excluding following/review groups';
   $('progressText').textContent = `${effectiveProgress} / ${minGoal}`;
   $('progressBar').style.width = `${Math.min(100, minGoal ? effectiveProgress/minGoal*100 : 0)}%`;
-  $('kpiRange').textContent = `${DAILY_MIN_POSTS}–${DAILY_TARGET_POSTS} posts / active KPI group`;
+  $('kpiRange').textContent = `${DAILY_TARGET_POSTS} posts / active KPI group`;
 
   const rows = allGroups.map(g => {
     const count = byGroup.get(g.id)?.length || 0;
@@ -212,7 +216,7 @@ async function loadDay(day){
     const postCell = g.count > 0
       ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
       : '<strong>0</strong>';
-    const kpiCell = g.state.excluded ? '<span class="kpi-excluded">Excluded</span>' : `${DAILY_MIN_POSTS}–${DAILY_TARGET_POSTS}`;
+    const kpiCell = g.state.excluded ? '<span class="kpi-excluded">Excluded</span>' : `${DAILY_TARGET_POSTS}`;
     return `
       <tr>
         <td class="group-cell" data-label="Group"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a></td>
