@@ -5,6 +5,7 @@ const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persist
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
 let selectedGroup=params.get('group')||'';
+let selectedDate=params.get('date')||'';
 let allPosts=[];
 let groupsById=new Map();
 let promptsById=new Map();
@@ -13,6 +14,10 @@ let latestMetric=new Map();
 
 const esc=(s='')=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const fmtNumber=v=>v===null||v===undefined?'—':new Intl.NumberFormat('en-US').format(v);
+function vnDateStart(key){
+  const [y,m,d]=String(key).split('-').map(Number);
+  return new Date(Date.UTC(y,m-1,d,-7,0,0));
+}
 function fmtDateTime(value,isSignal){
   if(isSignal) return 'No time';
   if(!value) return '—';
@@ -56,8 +61,16 @@ function render(){
 async function load(){
   $('refreshBtn').disabled=true;
   try{
+    let postsQuery=supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal');
+    if(selectedDate){
+      const start=vnDateStart(selectedDate);
+      const end=new Date(start.getTime()+86400_000);
+      postsQuery=postsQuery.gte('submitted_at',start.toISOString()).lt('submitted_at',end.toISOString()).eq('time_is_signal',false);
+    }
+    postsQuery=postsQuery.order('submitted_at',{ascending:false}).order('id',{ascending:false});
+
     const [postsRes,groupsRes,promptsRes]=await Promise.all([
-      supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal').order('submitted_at',{ascending:false}).order('id',{ascending:false}),
+      postsQuery,
       supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status').order('group_code',{ascending:true}),
       supabase.from('prompts').select('id,prompt_id,title')
     ]);
@@ -84,6 +97,7 @@ async function load(){
       [...groupsById.values()].map(g=>'<option value="'+esc(g.group_code)+'">'+esc(g.group_code)+' · '+esc(g.group_name)+'</option>').join('');
     if(selectedGroup && ![...groupsById.values()].some(g=>g.group_code===selectedGroup)) selectedGroup='';
     $('groupFilter').value=selectedGroup;
+    $('dateFilter').value=selectedDate;
     render();
   }catch(e){
     $('postRows').innerHTML='<tr><td colspan="5">Could not load posts: '+esc(e.message)+'</td></tr>';
@@ -96,9 +110,17 @@ $('groupFilter').addEventListener('change',()=>{
   selectedGroup=$('groupFilter').value;
   const url=new URL(location.href);
   if(selectedGroup) url.searchParams.set('group',selectedGroup); else url.searchParams.delete('group');
-  url.searchParams.delete('date');
+  if(selectedDate) url.searchParams.set('date',selectedDate); else url.searchParams.delete('date');
   history.replaceState(null,'',url);
   render();
+});
+$('dateFilter').addEventListener('change',async()=>{
+  selectedDate=$('dateFilter').value;
+  const url=new URL(location.href);
+  if(selectedDate) url.searchParams.set('date',selectedDate); else url.searchParams.delete('date');
+  if(selectedGroup) url.searchParams.set('group',selectedGroup); else url.searchParams.delete('group');
+  history.replaceState(null,'',url);
+  await load();
 });
 $('refreshBtn').addEventListener('click',load);
 
