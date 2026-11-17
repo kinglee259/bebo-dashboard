@@ -262,7 +262,7 @@ async function loadDay(day){
     a.group_name.localeCompare(b.group_name, 'en', {sensitivity:'base'})
   );
 
-  $('groupRows').innerHTML = rows.map(g => {
+  const rowHtml = (g) => {
     const postCell = day === 'today'
       ? postsSelect(g)
       : (g.count > 0
@@ -276,7 +276,13 @@ async function loadDay(day){
         <td data-label="Status" class="status ${g.state.cls} ${g.state.tip ? 'status-tip-target' : ''}" ${g.state.tip ? `data-tip="${esc(g.state.tip)}" tabindex="0"` : ''}><span class="status-label">${g.state.label}</span></td>
         <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
-  }).join('');
+  };
+  const priority=rows.filter(g=>g.engagement_tier==='s'||g.engagement_tier==='a');
+  const signal=rows.filter(g=>g.engagement_tier==='b');
+  const follow=rows.filter(g=>g.engagement_tier==='c'||!g.engagement_tier);
+  $('priorityRows').innerHTML=priority.map(rowHtml).join('');
+  $('signalRows').innerHTML=signal.map(rowHtml).join('');
+  $('followRows').innerHTML=follow.map(rowHtml).join('');
 }
 
 async function refresh(){
@@ -291,13 +297,13 @@ async function refresh(){
 $('postsCard').addEventListener('click', () => {
   if(currentDateKey) location.href = `./posts.html?date=${encodeURIComponent(currentDateKey)}`;
 });
-$('groupRows').addEventListener('change', (e) => {
+$('groupsPanel').addEventListener('change', (e) => {
   const approval = e.target.closest('[data-action="approval"]');
   if(approval) return updateApproval(approval);
   const posts = e.target.closest('[data-action="posts"]');
   if(posts) updatePosts(posts);
 });
-$('groupRows').addEventListener('click', (e) => {
+$('groupsPanel').addEventListener('click', (e) => {
   const button = e.target.closest('[data-action="remove"]');
   if(button) removeGroup(button);
 });
