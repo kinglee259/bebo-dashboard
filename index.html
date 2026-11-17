@@ -51,7 +51,7 @@
         <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
       </section>
 
-      <section class="list-panel">
+      <section class="list-panel" id="groupsPanel">
         <div class="list-head">
           <div>
             <h2>Groups</h2>
@@ -59,11 +59,34 @@
           </div>
           <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
-            <tbody id="groupRows"></tbody>
-          </table>
+        <div class="tier-block tier-block-priority">
+          <div class="tier-block-head"><strong>Priority</strong><span>★★★ / ★★</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+              <tbody id="priorityRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tier-block tier-block-signal">
+          <div class="tier-block-head"><strong>Active signal</strong><span>★</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+              <tbody id="signalRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tier-block tier-block-follow">
+          <div class="tier-block-head"><strong>Follow / Weak</strong><span>-- / ---</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+              <tbody id="followRows"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
