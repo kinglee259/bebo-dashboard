@@ -101,49 +101,57 @@ async function load(){
       const title=prompt?.title || 'Title not saved yet';
       const promptCode=post.prompt_code || prompt?.prompt_id || '—';
 
+      const image = prompt?.image_url
+        ? `<img src="${esc(prompt.image_url)}" alt="" loading="lazy" />`
+        : '<div class="post-thumb-empty">NO IMAGE</div>';
+
       return `
-      <article class="post-card compact-post-card">
-        <div class="compact-head">
-          <div class="compact-title-wrap">
-            <span class="prompt-id">${esc(promptCode)}</span>
-            <h2>${esc(title)}</h2>
-          </div>
-          <span class="status-chip ${status.cls}">${esc(status.label)}</span>
-        </div>
+      <article class="post-card content-first-card">
+        <div class="content-first-layout">
+          <div class="post-thumb">${image}</div>
 
-        <div class="compact-subline">
-          ${postGroup ? `<a href="${esc(postGroup.group_url||'#')}" target="_blank" rel="noopener">${esc(postGroup.group_code)} · ${esc(postGroup.group_name)}</a>` : ''}
-          <span>Posted ${esc(fmtTime(post.submitted_at))}</span>
-          ${prompt?.category ? `<span>${esc(prompt.category)}</span>` : ''}
-        </div>
-
-        <div class="compact-metrics">
-          <span>👍 ${fmtNumber(metric?.likes_count)}</span>
-          <span>❤️ ${fmtNumber(metric?.reactions_count)}</span>
-          <span>💬 ${metric?.comments_is_lower_bound ? '≥' : ''}${fmtNumber(metric?.comments_count)}</span>
-          <span>↗ ${fmtNumber(metric?.shares_count)}</span>
-          <span>👁 ${metric?.views_is_approx ? '~' : ''}${fmtNumber(metric?.views_count)}</span>
-          ${metric?.checked_at ? `<small>checked ${esc(fmtTime(metric.checked_at))}</small>` : '<small>no metrics yet</small>'}
-        </div>
-
-        ${prompt?.dna ? `<div class="compact-dna"><strong>DNA</strong> ${esc(prompt.dna)}</div>` : ''}
-
-        <div class="compact-actions">
-          ${post.post_url ? `<a class="text-link" href="${esc(post.post_url)}" target="_blank" rel="noopener">Facebook ↗</a>` : ''}
-          ${prompt?.content ? '<details class="inline-details"><summary>Prompt</summary><div class="content-text">'+esc(prompt.content)+'</div></details>' : ''}
-          <details class="inline-details">
-            <summary>Meta</summary>
-            <div class="raw-meta compact-raw-meta">
-              <div><span>Status</span><strong>${esc(status.label)}</strong></div>
-              <div><span>Approval mode</span><strong>${esc(postGroup?.approval_mode || '—')}</strong></div>
-              <div><span>Approved at</span><strong>${esc(fmtTime(post.approved_at))}</strong></div>
-              <div><span>Rejected at</span><strong>${esc(fmtTime(post.rejected_at))}</strong></div>
-              <div><span>Removed at</span><strong>${esc(fmtTime(post.removed_at))}</strong></div>
-              <div><span>Mapping</span><strong>${esc(post.group_mapping_status || '—')}</strong></div>
-              <div><span>Post notes</span><strong>${esc(post.notes || '—')}</strong></div>
-              <div><span>Metric note</span><strong>${esc(metric?.metric_note || '—')}</strong></div>
+          <div class="post-main">
+            <div class="content-first-head">
+              <div>
+                <span class="prompt-id">${esc(promptCode)}</span>
+                <h2>${esc(title)}</h2>
+              </div>
+              <span class="status-chip ${status.cls}">${esc(status.label)}</span>
             </div>
-          </details>
+
+            ${prompt?.dna ? `<div class="viral-dna"><span>VIRAL DNA</span><strong>${esc(prompt.dna)}</strong></div>` : ''}
+
+            <div class="compact-subline">
+              ${postGroup ? `<a href="${esc(postGroup.group_url||'#')}" target="_blank" rel="noopener">${esc(postGroup.group_code)} · ${esc(postGroup.group_name)}</a>` : ''}
+              <span>${esc(fmtTime(post.submitted_at))}</span>
+              ${prompt?.category ? `<span>${esc(prompt.category)}</span>` : ''}
+            </div>
+
+            <div class="micro-metrics">
+              <span>👍 ${fmtNumber(metric?.likes_count)}</span>
+              <span>❤️ ${fmtNumber(metric?.reactions_count)}</span>
+              <span>💬 ${metric?.comments_is_lower_bound ? '≥' : ''}${fmtNumber(metric?.comments_count)}</span>
+              <span>↗ ${fmtNumber(metric?.shares_count)}</span>
+              <span>👁 ${metric?.views_is_approx ? '~' : ''}${fmtNumber(metric?.views_count)}</span>
+            </div>
+
+            <div class="compact-actions">
+              ${post.post_url ? `<a class="text-link" href="${esc(post.post_url)}" target="_blank" rel="noopener">Facebook ↗</a>` : ''}
+              ${prompt?.content ? '<details class="inline-details"><summary>Prompt</summary><div class="content-text">'+esc(prompt.content)+'</div></details>' : ''}
+              <details class="inline-details">
+                <summary>Meta</summary>
+                <div class="raw-meta compact-raw-meta">
+                  <div><span>Status</span><strong>${esc(status.label)}</strong></div>
+                  <div><span>Approval mode</span><strong>${esc(postGroup?.approval_mode || '—')}</strong></div>
+                  <div><span>Approved at</span><strong>${esc(fmtTime(post.approved_at))}</strong></div>
+                  <div><span>Rejected at</span><strong>${esc(fmtTime(post.rejected_at))}</strong></div>
+                  <div><span>Removed at</span><strong>${esc(fmtTime(post.removed_at))}</strong></div>
+                  <div><span>Post notes</span><strong>${esc(post.notes || '—')}</strong></div>
+                  <div><span>Metric note</span><strong>${esc(metric?.metric_note || '—')}</strong></div>
+                </div>
+              </details>
+            </div>
+          </div>
         </div>
       </article>`;
     }).join('');
