@@ -31,10 +31,12 @@
       </section>
 
       <section class="cards-grid">
-        <article class="card"><span>Posts</span><strong id="postsCount">—</strong><small id="postsGoal">—</small></article>
+        <article class="card clickable-card" id="postsCard" title="View posts for this day">
+          <span>Posts</span><strong id="postsCount">—</strong><small id="postsGoal">—</small>
+        </article>
         <article class="card"><span>Groups posted</span><strong id="groupsPosted">—</strong><small id="groupsRemaining">—</small></article>
         <article class="card"><span>Groups at minimum KPI</span><strong id="groupsAtKpi">—</strong><small id="groupsAtKpiPct">—</small></article>
-        <article class="card"><span>Approval</span><strong id="approvalCount">—</strong><small id="approvalBreakdown">—</small></article>
+        <article class="card"><span>Posts still needed</span><strong id="postsNeeded">—</strong><small id="postsNeededHint">to reach minimum KPI</small></article>
       </section>
 
       <section class="progress-panel">
@@ -46,7 +48,7 @@
         <div class="list-head">
           <div>
             <h2>Groups</h2>
-            <p class="muted">Sorted by what needs attention first. Auto-approval groups are prioritized.</p>
+            <p class="muted">Not posted → under KPI → KPI met. Auto-approval groups are prioritized inside each status.</p>
           </div>
           <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
         </div>
