@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Report · BEBO Dashboard</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">BEBO</div>
+        <h1>Report</h1>
+        <p class="muted report-intro">Update engagement metrics. Values auto-save; Checked at changes only when you press Check now.</p>
+      </div>
+      <div class="top-actions">
+        <details class="nav-menu">
+          <summary aria-label="Open navigation" title="Menu">☰</summary>
+          <nav>
+            <a href="./index.html">Home</a>
+            <a href="./posts.html">Posts</a>
+            <a href="./report.html">Report</a>
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main>
+      <section class="report-toolbar">
+        <div>
+          <div id="reportDateLabel" class="date-label"></div>
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-day="today">Today</button>
+            <button class="tab" data-day="yesterday">Yesterday</button>
+          </div>
+        </div>
+        <div id="reportCount" class="report-count">—</div>
+      </section>
+
+      <section class="report-panel">
+        <div class="table-wrap report-table-wrap">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Prompt</th>
+                <th>Group</th>
+                <th>Like</th>
+                <th>Comment</th>
+                <th>Share</th>
+                <th>View</th>
+                <th>Checked</th>
+              </tr>
+            </thead>
+            <tbody id="reportRows"></tbody>
+          </table>
+        </div>
+        <div id="reportEmpty" class="empty-state hidden">No posts found for this day.</div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./report.js"></script>
+</body>
+</html>
