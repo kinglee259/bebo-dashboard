@@ -10,10 +10,11 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <a class="back-link" href="./index.html">← Dashboard</a>
-        <div class="eyebrow">BEBO</div>
-        <h1 id="pageTitle">Posts</h1>
-        <p id="pageSubtitle" class="muted"></p>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="./index.html">BEBO</a><span>/</span><strong>Posts</strong><span id="postsCrumbGroup" class="hidden">/</span><strong id="postsCrumbGroupName" class="hidden"></strong>
+        </nav>
+        <h1>Posts</h1>
+        <p class="muted posts-intro">All posted history across every day and group.</p>
       </div>
       <div class="top-actions">
         <button id="refreshBtn" class="secondary">Refresh</button>
@@ -27,9 +28,35 @@
         </details>
       </div>
     </header>
+
     <main>
-      <section id="postList" class="post-list"></section>
-      <div id="emptyState" class="empty-state hidden">No posts found for this selection.</div>
+      <section class="page-toolbar posts-toolbar">
+        <label class="toolbar-field">
+          <span>Filter by group</span>
+          <select id="groupFilter" class="toolbar-select">
+            <option value="">All groups</option>
+          </select>
+        </label>
+        <div id="postsCountLabel" class="report-count">—</div>
+      </section>
+
+      <section class="history-panel">
+        <div class="table-wrap history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Prompt</th>
+                <th>Group</th>
+                <th>Like</th>
+                <th>Comment</th>
+              </tr>
+            </thead>
+            <tbody id="postRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state hidden">No posts found for this group.</div>
+      </section>
     </main>
   </div>
   <script type="module" src="./posts.js"></script>
