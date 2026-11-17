@@ -10,9 +10,9 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <div class="eyebrow">BEBO</div>
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="./index.html">BEBO</a><span>/</span><strong>Report</strong></nav>
         <h1>Report</h1>
-        <p class="muted report-intro">Update engagement metrics. Values auto-save; Checked at changes only when you press Check now.</p>
+        <p class="muted report-intro">Metrics auto-save. Check now only updates the checked timestamp.</p>
       </div>
       <div class="top-actions">
         <details class="nav-menu">
@@ -36,6 +36,27 @@
           </div>
         </div>
         <div id="reportCount" class="report-count">—</div>
+      </section>
+
+      <section class="page-toolbar report-controls">
+        <label class="toolbar-field">
+          <span>Sort by</span>
+          <select id="sortBy" class="toolbar-select">
+            <option value="group_az">Group A–Z</option>
+            <option value="group_za">Group Z–A</option>
+            <option value="time_asc">Time ↑</option>
+            <option value="time_desc">Time ↓</option>
+            <option value="comments_desc">Comments high → low</option>
+            <option value="likes_desc">Likes high → low</option>
+          </select>
+        </label>
+        <label class="toolbar-field">
+          <span>Group by</span>
+          <select id="groupBy" class="toolbar-select">
+            <option value="group" selected>Group</option>
+            <option value="none">None</option>
+          </select>
+        </label>
       </section>
 
       <section class="report-panel">
