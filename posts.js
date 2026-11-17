@@ -58,13 +58,15 @@ async function load(){
   try{
     const [postsRes,groupsRes,promptsRes]=await Promise.all([
       supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal').order('submitted_at',{ascending:false}).order('id',{ascending:false}),
-      supabase.from('facebook_groups').select('id,group_code,group_name,group_url').order('group_code',{ascending:true}),
+      supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status').order('group_code',{ascending:true}),
       supabase.from('prompts').select('id,prompt_id,title')
     ]);
     for(const r of [postsRes,groupsRes,promptsRes]) if(r.error) throw r.error;
 
-    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null);
-    groupsById=new Map((groupsRes.data||[]).map(g=>[g.id,g]));
+    const activeGroups=(groupsRes.data||[]).filter(g=>g.posting_status!=='left');
+    const hiddenGroupIds=new Set((groupsRes.data||[]).filter(g=>g.posting_status==='left').map(g=>g.id));
+    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null&&!hiddenGroupIds.has(p.group_id));
+    groupsById=new Map(activeGroups.map(g=>[g.id,g]));
     promptsById=new Map((promptsRes.data||[]).map(p=>[p.id,p]));
     promptsByCode=new Map((promptsRes.data||[]).map(p=>[p.prompt_id,p]));
 
