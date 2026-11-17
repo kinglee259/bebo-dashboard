@@ -292,3 +292,62 @@ th,td{padding:9px 8px}
     text-shadow:0 0 9px var(--card-glow);
   }
 }
+
+
+/* Compact burger navigation */
+.nav-menu{position:relative}
+.nav-menu summary{list-style:none;width:34px;height:34px;display:grid;place-items:center;border:1px solid #303841;border-radius:9px;background:linear-gradient(180deg,#20262d,#171c22);color:#cbd3dc;cursor:pointer;font-size:17px;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 5px 14px rgba(0,0,0,.18)}
+.nav-menu summary::-webkit-details-marker{display:none}
+.nav-menu[open] summary{border-color:#46515d;color:var(--accent)}
+.nav-menu nav{position:absolute;z-index:50;right:0;top:40px;min-width:132px;padding:6px;border:1px solid #303841;border-radius:10px;background:#151a20;box-shadow:0 14px 34px rgba(0,0,0,.38)}
+.nav-menu nav a{display:block;padding:8px 10px;border-radius:7px;color:#cbd3dc;text-decoration:none;font-size:12px;font-weight:750}
+.nav-menu nav a:hover{background:#20262d;color:#fff}
+
+/* Daily engagement report */
+.report-intro{font-size:12px;margin-top:5px}
+.report-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.report-count{color:var(--muted);font-size:12px;font-weight:750}
+.report-panel{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 32%),var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 8px 22px rgba(0,0,0,.12)}
+.report-table{min-width:980px}
+.report-table th,.report-table td{padding:8px 7px}
+.report-time{white-space:nowrap;color:#aeb7c1;font-variant-numeric:tabular-nums}
+.report-prompt,.report-group{min-width:190px}
+.report-prompt strong,.report-group strong{display:block;font-size:11px;color:var(--accent);margin-bottom:2px}
+.report-prompt span,.report-group span{display:block;max-width:260px;color:#dbe1e7;font-size:12px;line-height:1.3}
+.report-group strong{color:#8fd8b3}
+.report-metric-cell{width:92px}
+.metric-input{width:78px;padding:7px 8px;border-radius:8px;border:1px solid #303943;background:#0f1419;color:#eaf0f5;outline:none;font-weight:800;font-variant-numeric:tabular-nums}
+.metric-input:focus{border-color:#66788a;box-shadow:0 0 0 2px rgba(127,200,255,.08)}
+.metric-input:disabled{opacity:.55}
+.report-check-cell{min-width:132px}
+.check-now-btn{border:1px solid #355345;background:linear-gradient(180deg,#173426,#10281c);color:#8fd8b3;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:11px;font-weight:850}
+.check-now-btn:hover{border-color:#4b745e}
+.check-now-btn:disabled{opacity:.55;cursor:wait}
+.checked-at,.save-state{display:block;margin-top:4px;font-size:9px;line-height:1.25}
+.checked-at{color:#7f8995}
+.save-state{min-height:11px;color:#7f8995}
+.save-state.ok{color:#7ed9a0}.save-state.error{color:#e89a9a}.save-state.saving{color:#d9c58a}
+
+@media(max-width:700px){
+  .nav-menu summary{width:32px;height:32px}
+  .report-intro{display:none}
+  .report-toolbar{margin-bottom:8px}
+  .report-count{font-size:10px}
+  .report-panel{padding:7px}
+  .report-table-wrap{overflow:visible}
+  .report-table{min-width:0}
+  .report-table tbody{display:grid;gap:7px}
+  .report-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px;border:1px solid #2b333d;border-radius:11px;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 40%),#12171d;box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 4px 12px rgba(0,0,0,.16)}
+  .report-table td{display:block;padding:0;border:0}
+  .report-table td::before{display:block;margin-bottom:3px;color:#68727e;font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+  .report-time,.report-prompt,.report-group,.report-check-cell{grid-column:1/-1}
+  .report-prompt,.report-group{min-width:0}
+  .report-prompt span,.report-group span{max-width:none}
+  .report-time{font-size:10px}
+  .report-metric-cell{width:auto}
+  .metric-input{width:100%;padding:7px}
+  .report-check-cell{min-width:0;display:grid!important;grid-template-columns:auto 1fr;align-items:center;gap:4px 8px;padding-top:3px!important}
+  .report-check-cell::before{grid-column:1/-1}
+  .checked-at{margin:0}
+  .save-state{grid-column:1/-1;margin:0}
+}
