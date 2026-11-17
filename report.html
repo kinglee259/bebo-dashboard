@@ -33,11 +33,16 @@
             <div class="tabs" role="tablist">
               <button class="tab active" data-day="today">Today</button>
               <button class="tab" data-day="yesterday">Yesterday</button>
+              <button class="tab" data-day="custom">Custom</button>
             </div>
           </div>
         </div>
 
         <div class="report-toolbar-right">
+          <label id="customDateField" class="toolbar-field report-toolbar-field report-date-field hidden">
+            <span>Date</span>
+            <input id="customDate" class="report-date-input" type="date" aria-label="Report date" />
+          </label>
           <label class="toolbar-field report-toolbar-field">
             <span>Sort by</span>
             <select id="sortBy" class="toolbar-select">
