@@ -48,11 +48,46 @@ function showToast(message, type='ok'){
 }
 
 function approvalSelect(group){
-  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" aria-label="Approval mode for ${esc(group.group_name)}">
+  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" data-posts-count="${Number(group.posts_count || 0)}" aria-label="Approval mode for ${esc(group.group_name)}">
     <option value="auto" ${group.approval_mode==='auto'?'selected':''}>Auto</option>
     <option value="manual" ${group.approval_mode==='manual'?'selected':''}>Manual</option>
     <option value="unknown" ${group.approval_mode==='unknown'?'selected':''}>Unknown</option>
   </select>`;
+}
+
+function postsSelect(group){
+  const current = Number(group.posts_count || 0);
+  const zero = current === 0 ? '<option value="0" selected disabled>0</option>' : '';
+  const options = Array.from({length:10}, (_,i) => i + 1)
+    .map(n => `<option value="${n}" ${n===current?'selected':''}>${n}</option>`)
+    .join('');
+  return `<select class="posts-select" data-action="posts" data-group-id="${group.id}" data-current="${current}" aria-label="Posts count for ${esc(group.group_name)}">${zero}${options}</select>`;
+}
+
+async function updatePosts(selectEl){
+  const groupId = Number(selectEl.dataset.groupId);
+  const previous = Number(selectEl.dataset.current || 0);
+  const next = Number(selectEl.value);
+  if(!groupId || !Number.isInteger(next) || next < 1 || next > 10 || next === previous) return;
+
+  selectEl.disabled = true;
+  const { data, error } = await supabase.from('facebook_groups')
+    .update({posts_count: next, updated_at: new Date().toISOString()})
+    .eq('id', groupId)
+    .select('id,posts_count')
+    .single();
+
+  if(error || !data){
+    selectEl.value = String(previous);
+    selectEl.disabled = false;
+    showToast(error?.message || 'Could not update posts', 'error');
+    return;
+  }
+
+  selectEl.dataset.current = String(next);
+  selectEl.disabled = false;
+  showToast('Posts updated');
+  await refresh();
 }
 
 async function updateApproval(selectEl){
@@ -67,6 +102,7 @@ async function updateApproval(selectEl){
   if(next === 'manual'){
     patch.workflow_status = 'following_approval';
     patch.workflow_status_since = nowIso;
+    if(Number(selectEl.dataset.postsCount || 0) < 1) patch.posts_count = 1;
   }else{
     patch.workflow_status = 'active';
     patch.workflow_status_since = null;
@@ -149,7 +185,7 @@ function kpiState(count){
 
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
-    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since')
+    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count')
     .eq('posting_status','active');
   if(error) throw error;
   allGroups = data || [];
@@ -180,11 +216,14 @@ async function loadDay(day){
   const excludedGroups = allGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
 
+  const countFor = (g) => day === 'today' ? Number(g.posts_count || 0) : (byGroup.get(g.id)?.length || 0);
   const eligibleCount = eligibleGroups.length;
-  const postCount = validPosts.length;
-  const groupsPosted = [...byGroup.keys()].filter(id => eligibleIds.has(id)).length;
-  const groupsAtMin = eligibleGroups.filter(g => (byGroup.get(g.id)?.length || 0) >= DAILY_MIN_POSTS).length;
-  const postsStillNeeded = eligibleGroups.reduce((sum,g) => sum + Math.max(0, DAILY_MIN_POSTS - (byGroup.get(g.id)?.length || 0)), 0);
+  const postCount = day === 'today'
+    ? allGroups.reduce((sum,g) => sum + Number(g.posts_count || 0), 0)
+    : validPosts.length;
+  const groupsPosted = eligibleGroups.filter(g => countFor(g) > 0).length;
+  const groupsAtMin = eligibleGroups.filter(g => countFor(g) >= DAILY_MIN_POSTS).length;
+  const postsStillNeeded = eligibleGroups.reduce((sum,g) => sum + Math.max(0, DAILY_MIN_POSTS - countFor(g)), 0);
   const minGoal = eligibleCount * DAILY_MIN_POSTS;
   const maxGoal = eligibleCount * DAILY_TARGET_POSTS;
   const effectiveProgress = minGoal - postsStillNeeded;
@@ -204,7 +243,7 @@ async function loadDay(day){
   $('kpiRange').textContent = `${DAILY_TARGET_POSTS} posts / active KPI group`;
 
   const rows = allGroups.map(g => {
-    const count = byGroup.get(g.id)?.length || 0;
+    const count = countFor(g);
     const state = workflowState(g) || kpiState(count);
     return {...g, count, state};
   }).sort((a,b) =>
@@ -213,9 +252,11 @@ async function loadDay(day){
   );
 
   $('groupRows').innerHTML = rows.map(g => {
-    const postCell = g.count > 0
-      ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
-      : '<strong>0</strong>';
+    const postCell = day === 'today'
+      ? postsSelect(g)
+      : (g.count > 0
+          ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
+          : '<strong>0</strong>');
     const kpiCell = g.state.excluded ? '<span class="kpi-excluded">Excluded</span>' : `${DAILY_TARGET_POSTS}`;
     return `
       <tr>
@@ -246,8 +287,10 @@ $('postsCard').addEventListener('click', () => {
 });
 $('refreshBtn').addEventListener('click', refresh);
 $('groupRows').addEventListener('change', (e) => {
-  const select = e.target.closest('[data-action="approval"]');
-  if(select) updateApproval(select);
+  const approval = e.target.closest('[data-action="approval"]');
+  if(approval) return updateApproval(approval);
+  const posts = e.target.closest('[data-action="posts"]');
+  if(posts) updatePosts(posts);
 });
 $('groupRows').addEventListener('click', (e) => {
   const button = e.target.closest('[data-action="remove"]');
