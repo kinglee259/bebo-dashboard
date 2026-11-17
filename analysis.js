@@ -1,6 +1,33 @@
-import{loadIntelligence,esc,fmt}from'./intelligence.js';const $=id=>document.getElementById(id);const bar=(t,r)=>{const m=Math.max(1,...r.map(x=>x.value));t.innerHTML=r.map(x=>'<div class="bar-row"><div class="bar-label">'+esc(x.label)+'</div><div class="bar-track"><span style="width:'+Math.max(2,x.value/m*100)+'%"></span></div><strong>'+esc(x.value)+'</strong></div>').join('')};const qi=(a,b,c,d)=>'<article><div><strong>'+esc(a)+'</strong><span>'+esc(b)+'</span></div><b>'+esc(c)+'</b><em>'+esc(d)+'</em></article>';
-try{const d=await loadIntelligence(),tp=d.prompts[0],tg=d.groups[0],tm=d.mechanics[0],core=d.groups.filter(g=>['s','a'].includes(g.tier)),weak=d.groups.filter(g=>g.posts>=2&&g.avgEngagement<8),under=d.groups.filter(g=>g.posts<2&&!['s','a'].includes(g.tier));$('analysisKpis').innerHTML=[['Posts',d.totals.posts],['Groups',d.totals.groups],['Comments',fmt(d.totals.comments)],['Shares',fmt(d.totals.shares)]].map(([k,v])=>'<article class="analysis-kpi"><span>'+k+'</span><strong>'+v+'</strong></article>').join('');
-$('decisionBoard').innerHTML=[['Scale now',tm?.mechanic||'Need data',tm?'Mechanic có '+tm.wins+' win / '+tm.posts+' tests; ưu tiên biến thể mới ở S/A.':'Chưa đủ mechanic lặp lại.'],['Replicate next',tp?.promptId||'—',tp?'Confidence hiện là '+tp.confidence+'. Test chéo group khác trước khi gọi proven.':'Chưa có winner rõ.'],['Reduce',weak.length?weak.map(x=>x.group_code).join(', '):'None',weak.length?'Đã có nhiều test nhưng avg engagement thấp.':'Chưa có group đủ evidence để giảm.'],['Find more groups',core.length+' core S/A',core.length<6?'Tìm thêm 5–10 lookalike groups để giảm phụ thuộc top groups.':'Core pool khá hơn; ưu tiên quality.']].map(x=>'<article><span>'+esc(x[0])+'</span><strong>'+esc(x[1])+'</strong><p>'+esc(x[2])+'</p></article>').join('');bar($('groupChart'),d.groups.slice(0,8).map(g=>({label:g.group_code,value:g.avgEngagement})));$('roleSummary').innerHTML=Object.entries(d.roles).sort((a,b)=>b[1]-a[1]).map(([r,c])=>'<div><span>'+esc(r)+'</span><strong>'+c+'</strong></div>').join('');
-const rec=[];if(tm)rec.push('Ưu tiên tạo thêm biến thể của <strong>'+esc(tm.mechanic)+'</strong>, giữ mechanic nhưng thay wording/góc kể. Confidence: <strong>'+esc(tm.confidence)+'</strong>.');if(tp)rec.push('<strong>'+esc(tp.promptId)+'</strong> đang là winner mạnh nhưng mới test '+tp.groupsTested+' group. Replicate trước khi scale rộng.');if(core.length)rec.push('Dồn bài confidence cao vào <strong>'+core.slice(0,4).map(g=>esc(g.group_code)).join(', ')+'</strong>; B-tier/unranked dùng cho exploratory testing.');if(under.length)rec.push('Chưa loại '+under.slice(0,5).map(g=>'<strong>'+esc(g.group_code)+'</strong>').join(', ')+'. Cho thêm 2–3 controlled tests bằng mechanic đã thắng.');rec.push('Tiếp tục tìm thêm <strong>5–10 group lookalike</strong> từ S/A hiện tại; ưu tiên comment culture, female U40+ fit và đúng content family hơn member count.');$('recommendations').innerHTML=rec.map((r,i)=>'<article><span>'+(i+1)+'</span><p>'+r+'</p></article>').join('');
-$('winnerRows').innerHTML=d.prompts.slice(0,12).map(p=>'<tr><td><strong>'+esc(p.promptId)+'</strong><span>'+esc(p.role)+'</span></td><td>'+fmt(p.bestEngagement)+'</td><td>'+p.groupsTested+'</td><td>'+esc(p.bestOutlier)+'×</td><td><span class="signal-label">'+esc(p.confidence)+'</span></td></tr>').join('');const q=[];if(tp)q.push(qi(tp.promptId,'Winner mạnh nhưng cần replication','Replicate',tp.bestOutlier+'×'));for(const g of under.slice(0,3))q.push(qi(g.group_code,'Group chưa đủ sample; dùng proven mechanic','Controlled test','Need data'));if(tm)q.push(qi(tm.mechanic,'Mechanic có win signal cao nhất','Create 2 variants',tm.winRate+'% win'));if(core.length<6)q.push(qi('Group acquisition','Core S/A pool còn hẹp','Find 5–10 groups',core.length+' core'));$('experimentQueue').innerHTML=q.join('');
-}catch(e){document.querySelector('.analysis-main').innerHTML='<section class="analysis-section"><p class="muted">'+esc(e.message)+'</p></section>';}
+import { loadIntelligence, esc, fmt, shortText, groupAction, promptAction, signalText } from './intelligence.js';
+const $=id=>document.getElementById(id);
+try{
+  const d=await loadIntelligence();
+  const winners=d.prompts.filter(p=>p.wins>0);
+  const needMore=d.groups.filter(g=>g.posts<2);
+  $('analysisKpis').innerHTML=[
+    ['Bài đã theo dõi',d.totals.posts],
+    ['Nhóm có dữ liệu',d.totals.groups],
+    ['Winner signal',winners.length],
+    ['Nhóm cần thêm dữ liệu',needMore.length]
+  ].map(([k,v])=>'<article class="analysis-kpi"><span>'+esc(k)+'</span><strong>'+fmt(v)+'</strong></article>').join('');
+
+  $('winnerRows').innerHTML=winners.slice(0,10).map(p=>{
+    const title=p.prompt?.title||shortText(p.prompt?.content||'Chưa có tiêu đề',78);
+    return '<tr><td class="identity-cell"><strong>'+esc(p.promptId)+'</strong><span>'+esc(title)+'</span></td><td><strong class="result-main">'+fmt(p.comments)+' bình luận · '+fmt(p.shares)+' chia sẻ</strong><span class="result-sub">'+esc(signalText(p))+'</span></td><td>'+p.posts+' lần · '+p.groupsTested+' nhóm</td><td>'+esc(promptAction(p))+'</td></tr>';
+  }).join('')||'<tr><td colspan="4" class="analysis-empty">Chưa có bài nào đủ tín hiệu.</td></tr>';
+
+  $('groupRows').innerHTML=d.groups.slice(0,12).map(g=>'<tr><td class="identity-cell"><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong></td><td><span class="tier-chip tier-'+esc(g.tier)+'">'+esc(g.tier.toUpperCase())+'</span></td><td>'+g.posts+'</td><td>'+g.avgEngagement+'</td><td>'+esc(g.topFamily?.family||'Chưa rõ')+'</td><td>'+esc(groupAction(g))+'</td></tr>').join('');
+
+  const actions=[];
+  const top=d.prompts[0];
+  const core=d.groups.filter(g=>g.tier==='s'||g.tier==='a');
+  const weak=d.groups.filter(g=>g.posts>=2&&g.avgEngagement<5);
+  if(top)actions.push('<strong>'+esc(top.promptId)+' · '+esc(top.prompt?.title||shortText(top.prompt?.content||'',70))+'</strong><span>'+esc(promptAction(top))+'.</span>');
+  if(core.length)actions.push('<strong>Ưu tiên '+core.slice(0,4).map(g=>esc(g.group_code)+' · '+esc(g.group_name)).join(', ')+'</strong><span>Dùng các bài đã có tín hiệu tốt trước.</span>');
+  if(needMore.length)actions.push('<strong>'+needMore.slice(0,4).map(g=>esc(g.group_code)+' · '+esc(g.group_name)).join(', ')+'</strong><span>Mỗi nhóm cần thêm 2–3 bài trước khi kết luận.</span>');
+  if(weak.length)actions.push('<strong>'+weak.slice(0,4).map(g=>esc(g.group_code)+' · '+esc(g.group_name)).join(', ')+'</strong><span>Giảm ưu tiên cho tới khi có bài test mới tốt hơn.</span>');
+  if(core.length<6)actions.push('<strong>Tìm thêm 5–10 nhóm tương tự nhóm S/A hiện tại</strong><span>Ưu tiên đúng audience và có nhiều bình luận thật, không chỉ nhìn số thành viên.</span>');
+  $('nextActions').innerHTML=actions.slice(0,5).map((x,i)=>'<article><b>'+(i+1)+'</b><div>'+x+'</div></article>').join('');
+}catch(e){
+  document.querySelector('.analysis-main').innerHTML='<section class="analysis-section"><p class="analysis-empty">'+esc(e.message)+'</p></section>';
+}
