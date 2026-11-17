@@ -14,7 +14,7 @@
           <a href="./index.html">BEBO</a><span>/</span><strong>Posts</strong><span id="postsCrumbGroup" class="hidden">/</span><strong id="postsCrumbGroupName" class="hidden"></strong>
         </nav>
         <h1>Posts</h1>
-        <p class="muted posts-intro">All posted history across every day and group.</p>
+        <p class="muted posts-intro">Posted history by date and group.</p>
       </div>
       <div class="top-actions">
         <button id="refreshBtn" class="secondary">Refresh</button>
@@ -31,6 +31,10 @@
 
     <main>
       <section class="page-toolbar posts-toolbar">
+        <label class="toolbar-field posts-date-field">
+          <span>Date</span>
+          <input id="dateFilter" class="report-date-input posts-date-input" type="date" aria-label="Filter posts by date" />
+        </label>
         <label class="toolbar-field">
           <span>Filter by group</span>
           <select id="groupFilter" class="toolbar-select">
