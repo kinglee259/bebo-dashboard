@@ -166,26 +166,32 @@ function effectiveWorkflow(group){
 
 function workflowState(group){
   const workflow = effectiveWorkflow(group);
-  if(workflow === 'review_48h') return {rank:0,label:'Review 48h+',cls:'none',excluded:true};
+  if(workflow === 'review_48h') return {rank:0,label:'Review',tip:'48h+ waiting approval',cls:'review',excluded:true};
   if(workflow === 'following_approval'){
     const hoursLeft = group.workflow_status_since
       ? Math.max(0, Math.ceil((48 * 3600_000 - (Date.now() - new Date(group.workflow_status_since).getTime())) / 3600_000))
       : null;
-    return {rank:1,label:hoursLeft === null ? 'Following approval' : `Following approval · ${hoursLeft}h left`,cls:'under',excluded:true};
+    return {rank:1,label:'Following',tip:hoursLeft === null ? 'Waiting approval' : `${hoursLeft}h left`,cls:'waiting',excluded:true};
   }
   return null;
 }
 
 function kpiState(count){
-  if(count === 0) return {rank:2,label:'Not posted',cls:'none',excluded:false};
-  if(count < DAILY_MIN_POSTS) return {rank:3,label:`Need ${DAILY_MIN_POSTS-count} more`,cls:'under',excluded:false};
+  if(count === 0) return {rank:2,label:'Not posted',cls:'idle',excluded:false};
+  if(count < DAILY_MIN_POSTS) return {rank:3,label:`${DAILY_MIN_POSTS-count} more`,cls:'more',excluded:false};
   if(count <= DAILY_TARGET_POSTS) return {rank:4,label:'KPI met',cls:'met',excluded:false};
-  return {rank:5,label:'Above target',cls:'over',excluded:false};
+  return {rank:5,label:'Above',cls:'over',excluded:false};
+}
+
+function engagementStar(group){
+  if(group.engagement_tier === 'best') return '<span class="group-star best" title="Best engagement" aria-label="Best engagement">★</span>';
+  if(group.engagement_tier === 'watch') return '<span class="group-star watch" title="Good signal" aria-label="Good signal">★</span>';
+  return '';
 }
 
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
-    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count')
+    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count,engagement_tier')
     .eq('posting_status','active');
   if(error) throw error;
   allGroups = data || [];
@@ -257,14 +263,14 @@ async function loadDay(day){
       : (g.count > 0
           ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
           : '<strong>0</strong>');
-    const kpiCell = g.state.excluded ? '<span class="kpi-excluded">Excluded</span>' : `${DAILY_TARGET_POSTS}`;
+    const kpiCell = g.state.excluded ? '<span class="kpi-excluded">-</span>' : `${DAILY_TARGET_POSTS}`;
     return `
       <tr>
-        <td class="group-cell" data-label="Group"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a></td>
+        <td class="group-cell" data-label="Group"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
         <td data-label="Approval">${approvalSelect(g)}</td>
         <td data-label="Posts">${postCell}</td>
         <td data-label="KPI">${kpiCell}</td>
-        <td data-label="Status" class="status ${g.state.cls}">${g.state.label}</td>
+        <td data-label="Status" class="status ${g.state.cls}" ${g.state.tip ? `title="${esc(g.state.tip)}"` : ''}>${g.state.label}</td>
         <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
   }).join('');
