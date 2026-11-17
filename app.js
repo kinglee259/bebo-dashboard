@@ -263,13 +263,11 @@ async function loadDay(day){
       : (g.count > 0
           ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
           : '<strong>0</strong>');
-    const kpiCell = g.state.excluded ? '<span class="kpi-excluded">-</span>' : `${DAILY_TARGET_POSTS}`;
     return `
       <tr>
-        <td class="group-cell" data-label="Group"><span class="group-code">${esc(g.group_code)}</span><a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
+        <td class="group-cell" data-label="Group"><a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View posts for ${esc(g.group_code)}">${esc(g.group_code)}</a><a class="group-name-link" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
         <td data-label="Approval">${approvalSelect(g)}</td>
         <td data-label="Posts">${postCell}</td>
-        <td data-label="KPI">${kpiCell}</td>
         <td data-label="Status" class="status ${g.state.cls}" ${g.state.tip ? `title="${esc(g.state.tip)}"` : ''}>${g.state.label}</td>
         <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
@@ -278,20 +276,16 @@ async function loadDay(day){
 
 async function refresh(){
   try{
-    $('refreshBtn').disabled = true;
     await loadGroups();
     await loadDay(selectedDay);
   }catch(e){
     alert(`Could not load dashboard: ${e.message}`);
-  }finally{
-    $('refreshBtn').disabled = false;
   }
 }
 
 $('postsCard').addEventListener('click', () => {
   if(currentDateKey) location.href = `./posts.html?date=${encodeURIComponent(currentDateKey)}`;
 });
-$('refreshBtn').addEventListener('click', refresh);
 $('groupRows').addEventListener('change', (e) => {
   const approval = e.target.closest('[data-action="approval"]');
   if(approval) return updateApproval(approval);
