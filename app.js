@@ -31,7 +31,7 @@ function formatVnDate(date) {
 }
 
 function esc(s='') { return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function approvalRank(mode){ return mode === 'auto' ? 0 : mode === 'unknown' ? 1 : 2; }
+function approvalRank(mode){ return mode === 'auto' ? 0 : mode === 'manual' ? 1 : 2; }
 
 function showToast(message, type='ok'){
   let el = document.getElementById('toast');
@@ -203,7 +203,10 @@ async function loadDay(day){
     const count = byGroup.get(g.id)?.length || 0;
     const state = workflowState(g) || kpiState(count);
     return {...g, count, state};
-  }).sort((a,b) => a.state.rank-b.state.rank || approvalRank(a.approval_mode)-approvalRank(b.approval_mode) || a.group_code.localeCompare(b.group_code,undefined,{numeric:true}));
+  }).sort((a,b) =>
+    approvalRank(a.approval_mode) - approvalRank(b.approval_mode) ||
+    a.group_name.localeCompare(b.group_name, 'en', {sensitivity:'base'})
+  );
 
   $('groupRows').innerHTML = rows.map(g => {
     const postCell = g.count > 0
