@@ -59,7 +59,6 @@ function render(){
 }
 
 async function load(){
-  $('refreshBtn').disabled=true;
   try{
     let postsQuery=supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal');
     if(selectedDate){
@@ -101,8 +100,6 @@ async function load(){
     render();
   }catch(e){
     $('postRows').innerHTML='<tr><td colspan="5">Could not load posts: '+esc(e.message)+'</td></tr>';
-  }finally{
-    $('refreshBtn').disabled=false;
   }
 }
 
@@ -122,6 +119,5 @@ $('dateFilter').addEventListener('change',async()=>{
   history.replaceState(null,'',url);
   await load();
 });
-$('refreshBtn').addEventListener('click',load);
 
 await load();
