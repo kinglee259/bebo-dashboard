@@ -2,12 +2,10 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, DAILY_MIN_POSTS, DAILY_TARGET_POSTS } from './config.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true }
+  auth: { persistSession: false, autoRefreshToken: false }
 });
 
 const $ = (id) => document.getElementById(id);
-const authView = $('authView');
-const appView = $('appView');
 let selectedDay = 'today';
 let allGroups = [];
 
@@ -108,33 +106,11 @@ async function refresh(){
     await loadDay(selectedDay);
   }catch(e){
     alert(`Could not load dashboard: ${e.message}`);
-  }finally{$('refreshBtn').disabled=false;}
-}
-
-async function showForSession(session){
-  if(session){
-    authView.classList.add('hidden');
-    appView.classList.remove('hidden');
-    await refresh();
-  }else{
-    appView.classList.add('hidden');
-    authView.classList.remove('hidden');
+  }finally{
+    $('refreshBtn').disabled = false;
   }
 }
 
-$('authForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); $('authMessage').textContent='Signing in…';
-  const { error } = await supabase.auth.signInWithPassword({email:$('email').value.trim(), password:$('password').value});
-  $('authMessage').textContent = error ? error.message : '';
-});
-
-$('signUpBtn').addEventListener('click', async () => {
-  $('authMessage').textContent='Creating account…';
-  const { error } = await supabase.auth.signUp({email:$('email').value.trim(), password:$('password').value});
-  $('authMessage').textContent = error ? error.message : 'Account created. If email confirmation is enabled, check your inbox once.';
-});
-
-$('signOutBtn').addEventListener('click', () => supabase.auth.signOut());
 $('refreshBtn').addEventListener('click', refresh);
 document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', async () => {
   selectedDay = btn.dataset.day;
@@ -142,6 +118,4 @@ document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', a
   await loadDay(selectedDay);
 }));
 
-supabase.auth.onAuthStateChange((_event, session) => showForSession(session));
-const { data:{ session } } = await supabase.auth.getSession();
-await showForSession(session);
+await refresh();
