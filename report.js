@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const $=id=>document.getElementById(id);
 let selectedDay='today';
+let customDateKey='';
 let loadedPosts=[];
 let groups=new Map();
 let promptsById=new Map();
@@ -15,6 +16,10 @@ const esc=(s='')=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','
 function vnDayStart(offset=0){
   const n=new Date(),v=new Date(n.getTime()+7*3600_000);
   return new Date(Date.UTC(v.getUTCFullYear(),v.getUTCMonth(),v.getUTCDate()+offset,-7,0,0));
+}
+function vnDateStart(key){
+  const [y,m,d]=String(key).split('-').map(Number);
+  return new Date(Date.UTC(y,m-1,d,-7,0,0));
 }
 function fmtDate(d){return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Ho_Chi_Minh',weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
 function fmtPostTime(v){return v?new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'}).format(new Date(v)):'—';}
@@ -198,8 +203,28 @@ function render(){
 }
 
 async function load(){
-  const offset=selectedDay==='today'?0:-1,start=vnDayStart(offset),end=vnDayStart(offset+1);
-  $('reportDateLabel').textContent=(selectedDay==='today'?'Today':'Yesterday')+' · '+fmtDate(start);
+  if(selectedDay==='custom'&&!customDateKey){
+    loadedPosts=[];
+    groups=new Map();
+    promptsById=new Map();
+    promptsByCode=new Map();
+    latestMetric=new Map();
+    metricState.clear();
+    $('reportDateLabel').textContent='Custom · Select date';
+    $('reportCount').textContent='—';
+    $('reportRows').innerHTML='';
+    $('reportEmpty').textContent='Select a date.';
+    $('reportEmpty').classList.remove('hidden');
+    return;
+  }
+
+  const start=selectedDay==='custom'
+    ? vnDateStart(customDateKey)
+    : vnDayStart(selectedDay==='today'?0:-1);
+  const end=new Date(start.getTime()+86400_000);
+  const dayLabel=selectedDay==='today'?'Today':selectedDay==='yesterday'?'Yesterday':'Custom';
+  $('reportDateLabel').textContent=dayLabel+' · '+fmtDate(start);
+  $('reportEmpty').textContent='No posts found for this day.';
 
   const realQuery=supabase.from('post_history')
     .select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,group_mapping_status,notes')
@@ -257,9 +282,20 @@ $('reportRows').addEventListener('change',e=>{
 $('reportRows').addEventListener('click',e=>{const b=e.target.closest('[data-action="check"]');if(b)checkNow(b);});
 $('sortBy').addEventListener('change',render);
 $('groupBy').addEventListener('change',render);
+$('customDate').addEventListener('change',async()=>{
+  if(selectedDay!=='custom')return;
+  customDateKey=$('customDate').value;
+  try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="8">Could not load report: '+esc(e.message)+'</td></tr>';}
+});
 document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',async()=>{
   selectedDay=btn.dataset.day;
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));
+  const isCustom=selectedDay==='custom';
+  $('customDateField').classList.toggle('hidden',!isCustom);
+  if(isCustom){
+    customDateKey='';
+    $('customDate').value='';
+  }
   try{await load();}catch(e){$('reportRows').innerHTML='<tr><td colspan="8">Could not load report: '+esc(e.message)+'</td></tr>';}
 }));
 
