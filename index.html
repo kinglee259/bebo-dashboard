@@ -32,6 +32,7 @@
           <div class="tabs" role="tablist">
             <button class="tab active" data-day="today">Today</button>
             <button class="tab" data-day="yesterday">Yesterday</button>
+            <button class="tab" data-day="y-1">Y-1</button>
           </div>
         </div>
         <div class="kpi-copy">Daily KPI: <strong id="kpiRange">3 posts / group</strong></div>
@@ -53,14 +54,10 @@
 
       <section class="list-panel" id="groupsPanel">
         <div class="list-head">
-          <div>
-            <h2>Groups</h2>
-            <p class="muted">Group status is separate from post status. Following approval / Review 48h groups are excluded from posting KPI.</p>
-          </div>
+          <div><h2>Groups</h2></div>
           <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
         </div>
         <div class="tier-block tier-block-priority">
-          <div class="tier-block-head"><strong>Priority</strong><span>★★★ / ★★</span></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
@@ -70,7 +67,6 @@
         </div>
 
         <div class="tier-block tier-block-signal">
-          <div class="tier-block-head"><strong>Active signal</strong><span>★</span></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
@@ -80,7 +76,6 @@
         </div>
 
         <div class="tier-block tier-block-follow">
-          <div class="tier-block-head"><strong>Follow / Weak</strong><span>-- / ---</span></div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>

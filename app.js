@@ -49,7 +49,7 @@ function showToast(message, type='ok'){
 }
 
 function approvalSelect(group){
-  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" data-posts-count="${Number(group.posts_count || 0)}" aria-label="Approval mode for ${esc(group.group_name)}">
+  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" data-posts-count="${Number(group.count ?? 0)}" aria-label="Approval mode for ${esc(group.group_name)}">
     <option value="auto" ${group.approval_mode==='auto'?'selected':''}>Auto</option>
     <option value="manual" ${group.approval_mode==='manual'?'selected':''}>Manual</option>
     <option value="unknown" ${group.approval_mode==='unknown'?'selected':''}>Unknown</option>
@@ -57,7 +57,7 @@ function approvalSelect(group){
 }
 
 function postsSelect(group){
-  const current = Number(group.posts_count || 0);
+  const current = Number(group.count ?? 0);
   const zero = current === 0 ? '<option value="0" selected disabled>0</option>' : '';
   const options = Array.from({length:10}, (_,i) => i + 1)
     .map(n => `<option value="${n}" ${n===current?'selected':''}>${n}</option>`)
@@ -73,9 +73,9 @@ async function updatePosts(selectEl){
 
   selectEl.disabled = true;
   const { data, error } = await supabase.from('facebook_groups')
-    .update({posts_count: next, updated_at: new Date().toISOString()})
+    .update({posts_count: next, posts_count_date: currentDateKey, updated_at: new Date().toISOString()})
     .eq('id', groupId)
-    .select('id,posts_count')
+    .select('id,posts_count,posts_count_date')
     .single();
 
   if(error || !data){
@@ -103,7 +103,10 @@ async function updateApproval(selectEl){
   if(next === 'manual'){
     patch.workflow_status = 'following_approval';
     patch.workflow_status_since = nowIso;
-    if(Number(selectEl.dataset.postsCount || 0) < 1) patch.posts_count = 1;
+    if(selectedDay === 'today' && Number(selectEl.dataset.postsCount || 0) < 1){
+      patch.posts_count = 1;
+      patch.posts_count_date = currentDateKey;
+    }
   }else{
     patch.workflow_status = 'active';
     patch.workflow_status_since = null;
@@ -195,18 +198,19 @@ function engagementStar(group){
 
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
-    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count,engagement_tier')
+    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count,posts_count_date,engagement_tier')
     .eq('posting_status','active');
   if(error) throw error;
   allGroups = data || [];
 }
 
 async function loadDay(day){
-  const offset = day === 'today' ? 0 : -1;
+  const offset = day === 'today' ? 0 : day === 'yesterday' ? -1 : -2;
+  const label = day === 'today' ? 'Today' : day === 'yesterday' ? 'Yesterday' : 'Y-1';
   const start = vnDayStart(offset);
   const end = vnDayStart(offset + 1);
   currentDateKey = vnDateKey(start);
-  $('dateLabel').textContent = `${day === 'today' ? 'Today' : 'Yesterday'} · ${formatVnDate(start)}`;
+  $('dateLabel').textContent = `${label} · ${formatVnDate(start)}`;
 
   const { data: posts, error } = await supabase.from('post_history')
     .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')
@@ -226,10 +230,12 @@ async function loadDay(day){
   const excludedGroups = allGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
 
-  const countFor = (g) => day === 'today' ? Number(g.posts_count || 0) : (byGroup.get(g.id)?.length || 0);
+  const countFor = (g) => day === 'today'
+    ? (g.posts_count_date === currentDateKey ? Number(g.posts_count || 0) : 0)
+    : (byGroup.get(g.id)?.length || 0);
   const eligibleCount = eligibleGroups.length;
   const postCount = day === 'today'
-    ? allGroups.reduce((sum,g) => sum + Number(g.posts_count || 0), 0)
+    ? allGroups.reduce((sum,g) => sum + countFor(g), 0)
     : validPosts.length;
   const groupsPosted = eligibleGroups.filter(g => countFor(g) > 0).length;
   const groupsAtMin = eligibleGroups.filter(g => countFor(g) >= DAILY_MIN_POSTS).length;
