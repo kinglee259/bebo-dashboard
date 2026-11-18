@@ -34,18 +34,24 @@ function statusBadge(status){
   return `<span class="todo-status todo-status-${cls}">${label}</span>`;
 }
 function card({kind='default',status='suggested',kicker,title,where,why,meta=''}) {
+  return {kind,status,kicker,title:title||'Chưa có nội dung',where,why,meta};
+}
+function renderCard(task={}) {
+  const kind=task.kind||'default';
+  const status=task.status||'suggested';
+  const title=task.title||'Chưa có nội dung';
   return `<article class="todo-card todo-card-${esc(kind)} todo-card-state-${esc(status)}">
     <div class="todo-card-top">
-      <div class="todo-card-tags">${statusBadge(status)}<span class="todo-kicker">${esc(kicker)}</span></div>
-      ${meta?`<span class="todo-meta">${esc(meta)}</span>`:''}
+      <div class="todo-card-tags">${statusBadge(status)}<span class="todo-kicker">${esc(task.kicker||'')}</span></div>
+      ${task.meta?`<span class="todo-meta">${esc(task.meta)}</span>`:''}
     </div>
     <strong class="todo-card-title">${esc(title)}</strong>
-    ${where?`<div class="todo-where"><span>WHERE</span><b>${esc(where)}</b></div>`:''}
-    <div class="todo-why"><span>WHY</span><p>${esc(why)}</p></div>
+    ${task.where?`<div class="todo-where"><span>WHERE</span><b>${esc(task.where)}</b></div>`:''}
+    <div class="todo-why"><span>WHY</span><p>${esc(task.why||'')}</p></div>
   </article>`;
 }
 function empty(text){return `<div class="todo-empty">${esc(text)}</div>`;}
-const CACHE_KEY='bebo.todo.snapshot.v1';
+const CACHE_KEY='bebo.todo.snapshot.v2';
 let syncHadError=false;
 
 function renderError(id,message){
@@ -54,10 +60,15 @@ function renderError(id,message){
   if(el)el.innerHTML=empty(`Không tải được block này: ${message}`);
 }
 function postPromptCode(p){return p.prompt?.prompt_id||p.prompt_code||'';}
+function safeQuote(prompt,n=105){
+  const text=String(prompt?.content||prompt?.title||'').trim();
+  if(!text)return'Chưa có nội dung';
+  return text.length>n?text.slice(0,n-1).trim()+'…':text;
+}
 function readSnapshot(){
   try{
     const value=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-    return value&&value.sections?value:null;
+    return value&&value.version===2&&value.sections?value:null;
   }catch(_error){return null;}
 }
 function formatSyncTime(iso){
@@ -81,7 +92,8 @@ function renderSnapshot(snapshot){
   const ids={todoKpi:'kpi',todoCross:'cross',todoData:'data',todoDiscovery:'discovery'};
   for(const [id,key] of Object.entries(ids)){
     const el=$(id);
-    if(el)el.innerHTML=snapshot.sections?.[key]||empty('Snapshot chưa có dữ liệu cho block này.');
+    const tasks=Array.isArray(snapshot.sections?.[key])?snapshot.sections[key]:[];
+    if(el)el.innerHTML=tasks.length?tasks.map(renderCard).join(''):empty('Snapshot chưa có dữ liệu cho block này.');
   }
   updateSyncMeta(snapshot);
   return true;
@@ -150,9 +162,10 @@ async function syncTodo(){
     return promptCandidates.map(p=>({p,score:promptFitScore(p,g)})).filter(x=>x.score>-1000).sort((a,b)=>b.score-a.score)[0]?.p||null;
   }
 
+  let kpiTasks=[],crossTasks=[],dataTasks=[],discovery=[];
   try{
     // 01 KPI: keep every active KPI group visible so F5 can turn the same row into In Progress / ✓ Done.
-    const kpiTasks=eligible
+    kpiTasks=eligible
       .map(g=>({g,count:groupCountToday(g)}))
       .sort((a,b)=>{
         const state=n=>n>=DAILY_MIN_POSTS?2:n>0?1:0;
@@ -165,7 +178,7 @@ async function syncTodo(){
         const dna=p?dnaIds(p.prompt?.dna).join(' + '):'';
         const title=status==='done'
           ? `${g.group_code} · KPI hôm nay đã đủ`
-          : p?`${p.promptId} · ${promptQuote(p.prompt,105)}`:`${g.group_code} cần thêm content`;
+          : p?`${p.promptId} · ${safeQuote(p.prompt,105)}`:`${g.group_code} cần thêm content`;
         const why=status==='done'
           ? `Đã ghi nhận ${count}/${DAILY_MIN_POSTS} bài hôm nay từ dữ liệu hiện có.`
           : p
@@ -180,7 +193,7 @@ async function syncTodo(){
           meta:g.approval_mode||''
         });
       });
-    $('todoKpi').innerHTML=kpiTasks.join('')||empty('Không có group active trong KPI.');
+    $('todoKpi').innerHTML=kpiTasks.length?kpiTasks.map(renderCard).join(''):empty('Không có group active trong KPI.');
   }catch(e){renderError('todoKpi',e.message);}
 
   try{
@@ -200,7 +213,7 @@ async function syncTodo(){
       }
     }
 
-    const crossTasks=[];
+    crossTasks=[];
     const crossCandidates=[...conceptMap.values()]
       .filter(c=>c.wins>0&&c.best)
       .sort((a,b)=>(b.wins-a.wins)||(b.best.engagement-a.best.engagement));
@@ -215,7 +228,7 @@ async function syncTodo(){
         crossTasks.push(card({
           kind:'cross',status:'done',
           kicker:`${c.dna} · cross-group`,
-          title:`${postPromptCode(best)} · ${promptQuote(best.prompt,105)}`,
+          title:`${postPromptCode(best)} · ${safeQuote(best.prompt,105)}`,
           where:tested.slice(0,3).map(g=>`${g.group_code} - ${shortGroup(g.group_name)}`).join(' · '),
           why:`DNA này đã được ghi nhận ở ${c.groups.size} group nên cross-group test được xem là đã thực hiện. Best signal: ${fmt(best.comments)} comments · ${fmt(best.shares)} shares.`,
           meta:family||''
@@ -237,7 +250,7 @@ async function syncTodo(){
         crossTasks.push(card({
           kind:'cross',status:'suggested',
           kicker:`${c.dna} · cross-group`,
-          title:`${postPromptCode(best)} · ${promptQuote(best.prompt,105)}`,
+          title:`${postPromptCode(best)} · ${safeQuote(best.prompt,105)}`,
           where:`${target.group_code} - ${shortGroup(target.group_name)}`,
           why:`Concept đã thắng ở ${source?`${source.group_code} - ${shortGroup(source.group_name)}`:'group trước'} với ${fmt(best.comments)} comments · ${fmt(best.shares)} shares, nhưng hiện mới phủ ${c.groups.size} group.`,
           meta:family||''
@@ -245,12 +258,12 @@ async function syncTodo(){
       }
       if(crossTasks.length>=8)break;
     }
-    $('todoCross').innerHTML=crossTasks.join('')||empty('Chưa có DNA winner nào để theo dõi cross-group.');
+    $('todoCross').innerHTML=crossTasks.length?crossTasks.map(renderCard).join(''):empty('Chưa có DNA winner nào để theo dõi cross-group.');
   }catch(e){renderError('todoCross',e.message);}
 
   try{
     // 03 Data coverage: 0 = Suggested, 1 = In Progress, >=2 = Done.
-    const dataTasks=eligible
+    dataTasks=eligible
       .map(g=>({g,n:(postsByGroup.get(g.id)||[]).filter(p=>!p.time_is_signal).length,gi:insightById.get(g.id)}))
       .sort((a,b)=>{
         const state=n=>n>=2?2:n===1?1:0;
@@ -264,7 +277,7 @@ async function syncTodo(){
           kicker:status==='done'?`DATA · ${n} bài`:status==='progress'?'DATA · 1/2':'DATA · 0/2',
           title:status==='done'
             ? `${g.group_code} · đủ dữ liệu tối thiểu`
-            : p?`${p.promptId} · ${promptQuote(p.prompt,95)}`:`${g.group_code} cần thêm bài test`,
+            : p?`${p.promptId} · ${safeQuote(p.prompt,95)}`:`${g.group_code} cần thêm bài test`,
           where:`${g.group_code} - ${shortGroup(g.group_name)}`,
           why:status==='done'
             ? `Đã ghi nhận ${n} bài, đạt ngưỡng tối thiểu 2 bài để bắt đầu đánh giá group.`
@@ -273,7 +286,7 @@ async function syncTodo(){
               : 'Chưa có dữ liệu performance. Nên test 2–3 content khác DNA trước khi xếp tier.'
         });
       });
-    $('todoData').innerHTML=dataTasks.join('')||empty('Không có group active để đánh giá data coverage.');
+    $('todoData').innerHTML=dataTasks.length?dataTasks.map(renderCard).join(''):empty('Không có group active để đánh giá data coverage.');
   }catch(e){renderError('todoData',e.message);}
 
   try{
@@ -297,7 +310,7 @@ async function syncTodo(){
       'Hoài niệm':'Nostalgia / Childhood Memories / Old-Fashioned Life',
       'Khác':'Women 40+ / Everyday Life'
     };
-    const discovery=[...familyWins.values()]
+    discovery=[...familyWins.values()]
       .sort((a,b)=>(b.wins-a.wins)||(b.comments-a.comments))
       .slice(0,3)
       .map(x=>{
@@ -310,19 +323,19 @@ async function syncTodo(){
           why:`${x.family} đang có ${x.wins} winner signal. DNA nổi bật: ${[...x.dnas].slice(0,3).join(', ')||'chưa gắn DNA'}. Dùng ${source?`${source.group_code} - ${shortGroup(source.group_name)}`:'group đang thắng'} làm mẫu audience. Chưa đánh dấu Done tự động vì DB chưa liên kết group mới với recommendation cụ thể.`
         });
       });
-    $('todoDiscovery').innerHTML=discovery.join('')||empty('Chưa có winner đủ rõ để định hướng tìm group mới.');
+    $('todoDiscovery').innerHTML=discovery.length?discovery.map(renderCard).join(''):empty('Chưa có winner đủ rõ để định hướng tìm group mới.');
   }catch(e){renderError('todoDiscovery',e.message);}
 
     if(syncHadError)throw new Error('Một hoặc nhiều block không sync được.');
     const snapshot={
-      version:1,
+      version:2,
       syncedAt:new Date().toISOString(),
       date:today,
       sections:{
-        kpi:$('todoKpi')?.innerHTML||'',
-        cross:$('todoCross')?.innerHTML||'',
-        data:$('todoData')?.innerHTML||'',
-        discovery:$('todoDiscovery')?.innerHTML||''
+        kpi:kpiTasks,
+        cross:crossTasks,
+        data:dataTasks,
+        discovery
       }
     };
     localStorage.setItem(CACHE_KEY,JSON.stringify(snapshot));
