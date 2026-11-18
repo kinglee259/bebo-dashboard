@@ -103,10 +103,6 @@ async function updateApproval(selectEl){
   if(next === 'manual'){
     patch.workflow_status = 'following_approval';
     patch.workflow_status_since = nowIso;
-    if(selectedDay === 'today' && Number(selectEl.dataset.postsCount || 0) < 1){
-      patch.posts_count = 1;
-      patch.posts_count_date = currentDateKey;
-    }
   }else{
     patch.workflow_status = 'active';
     patch.workflow_status_since = null;
