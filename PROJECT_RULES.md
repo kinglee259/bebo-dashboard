@@ -66,3 +66,13 @@ The commit message must:
 - Summarize the agreed batch in the body.
 - Mention relevant scope such as UI, DB, route, logic, mobile, or security.
 - State whether database/schema/migration changes are included when relevant.
+
+
+## 9. Todo clone/lineage workflow
+
+- Treat these phrases as clone-lineage triggers when they reference an existing prompt ID: **"tạo prompt giống ..."**, **"clone prompt ..."**, and **"clone pr ..."**.
+- A clone must retain a durable relationship to its source/root viral prompt; do not infer lineage from similar wording alone when persistent metadata is available.
+- When the user later reports that the clone was posted to a group and runs **"add pr db"**, update the normal prompt/post tracking and the Todo coverage for that viral lineage without requiring a separate "update Todo" command.
+- Todo coverage is evaluated **per viral lineage and per group**, not by treating one prompt ID as permanently exhausted.
+- In the Todo viral card, list only **Group + status** for coverage: **✓** when that lineage has a post in the group, **-** when it does not.
+- Keep Todo group recommendation ordering based on the existing tier/fit priority. A covered group remains visible; coverage changes its mark, not the lineage model or historical record.

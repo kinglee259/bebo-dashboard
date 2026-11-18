@@ -1665,3 +1665,17 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
   .todo-where-groups .todo-group-link,
   .todo-posted-row .todo-group-link{font-size:10.5px}
 }
+
+
+/* Todo viral-lineage coverage: one row per group, compact status only. */
+.todo-coverage{margin-top:10px;padding-top:9px;border-top:1px solid rgba(190,205,210,.12)}
+.todo-coverage-list{display:grid;gap:4px}
+.todo-coverage-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px;padding:3px 0}
+.todo-coverage-row .todo-group-link{flex:1;min-width:0;border:0;background:transparent;padding:0;color:#cbd4d7}
+.todo-coverage-row a.todo-group-link:hover{transform:none;background:transparent;border-color:transparent;color:#eef4f5}
+.todo-coverage-status{flex:0 0 22px;text-align:center;color:#748087;font-size:14px;font-weight:800;line-height:1}
+.todo-coverage-status.is-covered{color:#79d99c}
+@media (max-width:680px){
+  .todo-coverage-row{min-height:26px}
+  .todo-coverage-status{font-size:13px}
+}

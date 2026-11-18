@@ -68,7 +68,7 @@ export async function loadIntelligence(){
   const [postRes,groupRes,promptRes,metricRes]=await Promise.all([
     supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,status'),
     supabase.from('facebook_groups').select('id,group_code,group_name,engagement_tier,posting_status,group_url,member_count,target_fit'),
-    supabase.from('prompts').select('id,prompt_id,title,content,category,dna,status'),
+    supabase.from('prompts').select('id,prompt_id,title,content,category,dna,status,source_prompt_id,root_prompt_id'),
     supabase.from('post_metrics').select('*').order('created_at',{ascending:false}).order('id',{ascending:false})
   ]);
   for(const r of [postRes,groupRes,promptRes,metricRes])if(r.error)throw r.error;

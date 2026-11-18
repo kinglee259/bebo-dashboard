@@ -24,6 +24,9 @@ function shortGroup(name='',limit=3){
 }
 function tierScore(tier){return tier==='s'?30:tier==='a'?24:tier==='b'?16:tier==='c'?4:8;}
 function testedGroupIds(promptRow){return promptRow?.groups instanceof Set?promptRow.groups:new Set();}
+function lineageKey(prompt={}){
+  return prompt?.root_prompt_id||prompt?.id||prompt?.prompt_id||'';
+}
 function tierStars(tier){
   return tier==='s'?'★★★':tier==='a'?'★★':tier==='b'?'★':'';
 }
@@ -72,6 +75,9 @@ function renderCard(task={}) {
   const headlineText=task.promptQuote||task.title||'Chưa có nội dung';
   const promptId=task.promptId||'';
   const dna=task.dnaLabel?`<div class="todo-dna-line">${esc(task.dnaLabel)}</div>`:'';
+  const coverage=Array.isArray(task.groupCoverage)&&task.groupCoverage.length
+    ? `<div class="todo-coverage"><div class="todo-coverage-list">${task.groupCoverage.map(item=>`<div class="todo-coverage-row">${groupLink(item.group,{showStars:false})}<span class="todo-coverage-status ${item.covered?'is-covered':''}" aria-label="${item.covered?'Đã có bài':'Chưa có bài'}">${item.covered?'✓':'-'}</span></div>`).join('')}</div></div>`
+    : '';
   const posted=Array.isArray(task.postedGroups)&&task.postedGroups.length
     ? `<div class="todo-posted"><span>ĐÃ POST</span><div class="todo-posted-list">${task.postedGroups.map(item=>{
         const metric=item.metrics?`<em>${esc(item.metrics)}</em>`:'';
@@ -93,6 +99,7 @@ function renderCard(task={}) {
       </div>
       ${statusBadge(status)}
     </div>
+    ${coverage}
     ${posted}
     ${suggested}
     <div class="todo-why"><span>WHY</span>${source}<p>${esc(task.why||'')}</p></div>
@@ -207,27 +214,34 @@ async function syncTodo(){
 
   let kpiTasks=[],crossTasks=[],dataTasks=[],discovery=[];
   try{
-    // 01 Today: each card is one concrete quote/prompt. Scale proven quotes before new tests.
-    const promptById=new Map(d.prompts.map(p=>[p.prompt?.id||p.promptId,p]));
-    const promptPosts=new Map();
-    for(const post of d.posts){
-      const key=post.prompt?.id||post.promptId||post.prompt_id||post.prompt_code;
+    // 01 Today: one card per viral prompt lineage. Every active KPI group stays visible.
+    // Coverage is per group: ✓ means this lineage has already been posted there; - means not yet.
+    const lineageMap=new Map();
+    for(const p of d.prompts){
+      const key=lineageKey(p.prompt);
       if(!key)continue;
-      if(!promptPosts.has(key))promptPosts.set(key,[]);
-      promptPosts.get(key).push(post);
+      if(!lineageMap.has(key))lineageMap.set(key,{key,members:[],posts:[]});
+      lineageMap.get(key).members.push(p);
+    }
+    for(const post of d.posts){
+      const key=lineageKey(post.prompt);
+      if(!key)continue;
+      if(!lineageMap.has(key))lineageMap.set(key,{key,members:[],posts:[]});
+      lineageMap.get(key).posts.push(post);
     }
 
-    const quoteCandidates=d.prompts
-      .map(p=>{
-        const key=p.prompt?.id||p.promptId;
-        const posts=promptPosts.get(key)||[];
-        const realPosts=posts;
-        const winPosts=realPosts.filter(x=>x.isWin).sort((a,b)=>b.engagement-a.engagement);
+    const quoteCandidates=[...lineageMap.values()]
+      .map(item=>{
+        const rootMember=item.members.find(p=>String(p.prompt?.id)===String(item.key));
+        const p=rootMember||item.members.sort((a,b)=>(b.wins-a.wins)||(b.bestEngagement-a.bestEngagement))[0];
+        if(!p)return null;
+        const posts=item.posts;
+        const winPosts=posts.filter(x=>x.isWin).sort((a,b)=>b.engagement-a.engagement);
         const best=winPosts[0]||null;
-        const postedGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
-        return {p,posts,realPosts,winPosts,best,postedGroupIds};
+        const coveredGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
+        return {p,posts,winPosts,best,coveredGroupIds};
       })
-      .filter(x=>x.best)
+      .filter(x=>x?.best)
       .sort((a,b)=>(b.best.engagement-a.best.engagement)||(b.winPosts.length-a.winPosts.length));
 
     kpiTasks=[];
@@ -235,80 +249,58 @@ async function syncTodo(){
       const p=item.p;
       const best=item.best;
       const family=p.family||best.family||'';
-      const targets=eligible
-        .filter(g=>!item.postedGroupIds.has(g.id))
+      const rankedGroups=eligible
         .map(g=>{
           const gi=insightById.get(g.id);
           let score=tierScore(g.engagement_tier)*10;
           if(gi?.topFamily?.family&&gi.topFamily.family===family)score+=22;
           if(groupCountToday(g)<DAILY_MIN_POSTS)score+=2;
-          return {g,score};
+          return {g,score,covered:item.coveredGroupIds.has(g.id)};
         })
-        .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
-        .slice(0,5)
-        .map(x=>groupRef(x.g));
+        .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)));
 
-      const postedGroups=item.posts
-        .filter(x=>x.group_id)
-        .sort((a,b)=>(b.engagement-a.engagement)||new Date(b.submitted_at||0)-new Date(a.submitted_at||0))
-        .map(post=>({
-          group:groupRef(post.group),
-          postStatus:post.status||'submitted',
-          metrics:(post.likes||post.comments||post.shares)
-            ? `${fmt(post.likes)} likes · ${fmt(post.comments)} comments · ${fmt(post.shares)} shares`
-            : ''
-        }));
-
-      if(!targets.length&&postedGroups.length<2)continue;
+      const groupCoverage=rankedGroups.map(x=>({group:groupRef(x.g),covered:x.covered}));
+      const openCount=groupCoverage.filter(x=>!x.covered).length;
 
       kpiTasks.push(card({
         kind:'kpi',
-        status:targets.length?'suggested':'done',
+        status:openCount?'suggested':'done',
         title:'',
         promptId:p.promptId,
         dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
         promptQuote:safeQuote(p.prompt,180),
-        postedGroups,
-        whereGroups:targets,
+        groupCoverage,
         sourceGroup:groupRef(best.group),
         sourceMetrics:`${fmt(best.likes)} likes · ${fmt(best.comments)} comments · ${fmt(best.shares)} shares`,
-        why:targets.length
-          ? `Quote này đã có winner signal ở ${best.group?.group_code||'group nguồn'}. Ưu tiên scale đúng quote này sang group chưa post, theo tier mạnh trước; KPI chỉ là tie-breaker nhẹ.`
-          : 'Quote này hiện không còn target active phù hợp chưa post trong danh sách group hiện tại.',
+        why:openCount
+          ? `Viral lineage này còn ${openCount} group chưa cover. Danh sách giữ nguyên ưu tiên theo tier/fit hiện tại; ✓ chỉ đánh dấu group đã có bài.`
+          : 'Viral lineage này đã có bài ở toàn bộ group active hiện tại.',
       }));
       if(kpiTasks.length>=8)break;
     }
 
-    // Explore only after proven quotes.
+    // Explore only after proven viral lineages.
     const newTests=d.prompts
       .filter(p=>p.wins===0)
       .slice(0,2)
       .map(p=>{
-        const posts=promptPosts.get(p.prompt?.id||p.promptId)||[];
-        const postedGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
-        const targets=eligible
-          .filter(g=>!postedGroupIds.has(g.id))
-          .sort((a,b)=>tierScore(b.engagement_tier)-tierScore(a.engagement_tier))
-          .slice(0,3)
-          .map(groupRef);
+        const key=lineageKey(p.prompt);
+        const posts=lineageMap.get(key)?.posts||[];
+        const coveredGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
+        const groupCoverage=eligible
+          .map(g=>({g,score:tierScore(g.engagement_tier),covered:coveredGroupIds.has(g.id)}))
+          .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
+          .map(x=>({group:groupRef(x.g),covered:x.covered}));
         return card({
-          kind:'kpi',status:'suggested',
+          kind:'kpi',status:groupCoverage.some(x=>!x.covered)?'suggested':'done',
           title:'',
           promptId:p.promptId,
           dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
           promptQuote:safeQuote(p.prompt,180),
-          postedGroups:posts.filter(x=>x.group_id).map(post=>({
-            group:groupRef(post.group),
-            postStatus:post.status||'submitted',
-            metrics:(post.likes||post.comments||post.shares)
-              ? `${fmt(post.likes)} likes · ${fmt(post.comments)} comments · ${fmt(post.shares)} shares`
-              : ''
-          })),
-          whereGroups:targets,
-          why:'Đây là quote mới/chưa có winner. Chỉ ưu tiên sau các WINNER QUOTE ở trên.',
+          groupCoverage,
+          why:'Quote mới/chưa có winner. Group vẫn được xếp theo tier để test sau các viral lineage ở trên.',
         });
-      })
-      .filter(task=>task.whereGroups?.length);
+      });
 
     kpiTasks.push(...newTests);
     $('todoKpi').innerHTML=kpiTasks.length?kpiTasks.map(renderCard).join(''):empty('Chưa có quote winner hoặc quote test phù hợp. Sync lại sau khi có thêm dữ liệu.');
