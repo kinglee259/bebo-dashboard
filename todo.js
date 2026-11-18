@@ -1,6 +1,7 @@
 import { DAILY_MIN_POSTS } from './config.js';
 import { supabase, loadIntelligence, esc, fmt, promptQuote } from './intelligence.js';
 
+const $ = id => document.getElementById(id);
 const VN_TZ='Asia/Ho_Chi_Minh';
 
 function vnDateKey(){
