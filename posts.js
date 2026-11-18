@@ -67,7 +67,7 @@ async function load(){
     if(selectedDate){
       const start=vnDateStart(selectedDate);
       const end=new Date(start.getTime()+86400_000);
-      postsQuery=postsQuery.gte('submitted_at',start.toISOString()).lt('submitted_at',end.toISOString()).eq('time_is_signal',false);
+      postsQuery=postsQuery.gte('submitted_at',start.toISOString()).lt('submitted_at',end.toISOString());
     }
     postsQuery=postsQuery.order('submitted_at',{ascending:false}).order('id',{ascending:false});
 
@@ -78,10 +78,9 @@ async function load(){
     ]);
     for(const r of [postsRes,groupsRes,promptsRes]) if(r.error) throw r.error;
 
-    const activeGroups=(groupsRes.data||[]).filter(g=>g.posting_status!=='left');
-    const hiddenGroupIds=new Set((groupsRes.data||[]).filter(g=>g.posting_status==='left').map(g=>g.id));
-    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null&&!hiddenGroupIds.has(p.group_id));
-    groupsById=new Map(activeGroups.map(g=>[g.id,g]));
+    const allKnownGroups=groupsRes.data||[];
+    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null);
+    groupsById=new Map(allKnownGroups.map(g=>[g.id,g]));
     promptsById=new Map((promptsRes.data||[]).map(p=>[p.id,p]));
     promptsByCode=new Map((promptsRes.data||[]).map(p=>[p.prompt_id,p]));
 

@@ -181,19 +181,14 @@ async function syncTodo(){
   for(const p of d.posts.filter(p=>p.group_id)){
     if(!postsByGroup.has(p.group_id))postsByGroup.set(p.group_id,[]);
     postsByGroup.get(p.group_id).push(p);
-    if(!p.time_is_signal&&p.submitted_at&&vnDateKey(new Date(p.submitted_at))===today){
+    if(p.submitted_at&&vnDateKey(new Date(p.submitted_at))===today){
       if(!todayPostsByGroup.has(p.group_id))todayPostsByGroup.set(p.group_id,[]);
       todayPostsByGroup.get(p.group_id).push(p);
     }
   }
 
-  // Use the stronger of the explicit Home counter and actual post_history rows.
-  // This avoids marking a group incomplete when one source has already been updated.
-  const groupCountToday=g=>{
-    const manual=g.posts_count_date===today?Number(g.posts_count||0):0;
-    const history=(todayPostsByGroup.get(g.id)||[]).length;
-    return Math.max(manual,history);
-  };
+  // post_history is the single source of truth for actual posts.
+  const groupCountToday=g=>(todayPostsByGroup.get(g.id)||[]).length;
 
   const promptCandidates=d.prompts.filter(p=>p.wins>0).sort((a,b)=>(b.wins-a.wins)||(b.bestEngagement-a.bestEngagement));
 
@@ -226,7 +221,7 @@ async function syncTodo(){
       .map(p=>{
         const key=p.prompt?.id||p.promptId;
         const posts=promptPosts.get(key)||[];
-        const realPosts=posts.filter(x=>!x.time_is_signal);
+        const realPosts=posts;
         const winPosts=realPosts.filter(x=>x.isWin).sort((a,b)=>b.engagement-a.engagement);
         const best=winPosts[0]||null;
         const postedGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
@@ -389,7 +384,7 @@ async function syncTodo(){
   try{
     // 03 Data coverage: 0 = Suggested, 1 = In Progress, >=2 = Done.
     dataTasks=eligible
-      .map(g=>({g,n:(postsByGroup.get(g.id)||[]).filter(p=>!p.time_is_signal).length,gi:insightById.get(g.id)}))
+      .map(g=>({g,n:(postsByGroup.get(g.id)||[]).length,gi:insightById.get(g.id)}))
       .sort((a,b)=>{
         const state=n=>n>=2?2:n===1?1:0;
         return state(a.n)-state(b.n)||(a.n-b.n)||(tierScore(b.g.engagement_tier)-tierScore(a.g.engagement_tier));

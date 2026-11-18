@@ -1,12 +1,68 @@
 # BEBO Dashboard Project Rules
 
-## Change & Commit Rules
+These rules define how ChatGPT and the user work together on this repository. They are process rules and apply across the whole project.
 
-1. **Cross-page regression is mandatory for logic changes**
-   - Whenever shared logic or any logic that may affect more than one page/tab is changed, re-check **all related pages/tabs** before committing.
-   - Do not validate only the page currently being edited.
-   - Verify shared counters, statuses, filters, data flow, and derived UI wherever the changed logic is consumed.
-   - A logic change is not considered complete until the affected-page regression pass is finished.
+## 1. Discussion first, implementation only on commit command
 
-2. **Commit gate**
-   - Repository changes are only committed when the user explicitly says **"commit đi"**.
+- Before the user says **"commit đi"**, do not modify repository code, database schema/data, or create commits.
+- Before that command, work is limited to reading, auditing, researching, tracing data flow, identifying root cause, proposing changes, and agreeing on scope.
+- Do not silently implement something just because it was discussed.
+
+## 2. "commit đi" means one agreed batch
+
+- When the user says **"commit đi"**, gather **all changes discussed and explicitly agreed since the previous commit**.
+- Implement and commit them as **one coherent batch**, not as separate piecemeal commits.
+- Do not omit an agreed item.
+- Do not add an item that was only proposed but not agreed.
+- The latest agreed decision overrides an older superseded decision.
+
+## 3. Research and root-cause first
+
+- Do not guess, patch by trial and error, or invent selectors/data behavior.
+- Read the actual code, schema, data path, and relevant evidence first.
+- Identify and verify the root cause before changing logic.
+- Do not claim **fixed**, **done**, or **correct** without verification evidence.
+
+## 4. Database changes require explicit scope and verification
+
+- Do not modify database data/schema unless the user explicitly asks for the database operation (for example **"add pr db"**, **"update pr db"**) or the agreed commit batch explicitly requires it.
+- Before a DB write, inspect the real schema/data and identify the exact records to change.
+- Preserve existing history and avoid duplicate or fabricated records.
+- After a DB write, verify the resulting records and dependent counters/derived data.
+- A successful write call alone is not proof that the data is correct.
+
+## 5. Cross-page regression is mandatory for logic changes
+
+- Whenever shared logic or any logic that can affect more than one page/tab changes, re-check **every related page/tab** before committing.
+- Do not validate only the page currently being edited.
+- Trace the full path **DB/source -> transformation/filter -> UI -> action** wherever the logic is consumed.
+- Check counters, date boundaries/timezone, filters, statuses, derived UI, desktop/mobile behavior when applicable, and cross-page consistency.
+- If the database/source is correct but a page is wrong, fix the incorrect consumer/filter; do not mutate correct data merely to make the UI match.
+- A logic change is not complete until the affected-page regression pass is finished.
+
+## 6. Preserve unrelated agreed behavior
+
+- A change in one area does not authorize changing unrelated behavior.
+- Keep previously agreed behavior unless the user explicitly changes it.
+- Before editing shared code, identify downstream consumers so a local fix does not break another page.
+
+## 7. Context and decision precedence
+
+- When the user asks to continue prior work or reread context, review the work in chronological order and do not skip decisions.
+- Distinguish old rules from newer replacements.
+- Use the **latest explicitly agreed rule** as the active rule.
+- Never mix a superseded rule back into the current implementation.
+
+## 8. Commit quality gate
+
+Before the final commit:
+- Confirm the implementation matches the complete agreed batch.
+- Run the required cross-page regression checks.
+- Verify database/UI consistency when the change touches data logic.
+- Do not commit while known regressions or unexplained mismatches remain.
+
+The commit message must:
+- Have a clear subject.
+- Summarize the agreed batch in the body.
+- Mention relevant scope such as UI, DB, route, logic, mobile, or security.
+- State whether database/schema/migration changes are included when relevant.

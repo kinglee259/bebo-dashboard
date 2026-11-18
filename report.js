@@ -229,26 +229,14 @@ async function load(){
   $('reportDateLabel').textContent=dayLabel+' · '+fmtDate(start);
   $('reportEmpty').textContent='No posts found for this day.';
 
-  const realQuery=supabase.from('post_history')
+  const postsQuery=supabase.from('post_history')
     .select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,group_mapping_status,notes')
     .gte('submitted_at',start.toISOString()).lt('submitted_at',end.toISOString())
-    .eq('time_is_signal',false).order('submitted_at',{ascending:true});
+    .order('submitted_at',{ascending:true});
 
-  const signalQuery=selectedDay==='yesterday'
-    ? supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,group_mapping_status,notes').eq('time_is_signal',true).order('id',{ascending:true})
-    : Promise.resolve({data:[],error:null});
-
-  const [realRes,signalRes]=await Promise.all([realQuery,signalQuery]);
-  if(realRes.error)throw realRes.error;
-  if(signalRes.error)throw signalRes.error;
-
-  const seen=new Set();
-  loadedPosts=[];
-  for(const p of [...(realRes.data||[]),...(signalRes.data||[])]){
-    if(seen.has(p.id))continue;
-    seen.add(p.id);
-    loadedPosts.push(p);
-  }
+  const postsRes=await postsQuery;
+  if(postsRes.error)throw postsRes.error;
+  loadedPosts=postsRes.data||[];
 
   const groupIds=[...new Set(loadedPosts.map(p=>p.group_id).filter(Boolean))];
   const promptIds=[...new Set(loadedPosts.map(p=>p.prompt_id).filter(Boolean))];
@@ -263,10 +251,8 @@ async function load(){
   ]);
   for(const r of [gRes,pIdRes,pCodeRes,mRes])if(r.error)throw r.error;
 
-  const activeGroups=(gRes.data||[]).filter(x=>x.posting_status!=='left');
-  const hiddenGroupIds=new Set((gRes.data||[]).filter(x=>x.posting_status==='left').map(x=>x.id));
-  loadedPosts=loadedPosts.filter(p=>!hiddenGroupIds.has(p.group_id));
-  groups=new Map(activeGroups.map(x=>[x.id,x]));
+  const allKnownGroups=gRes.data||[];
+  groups=new Map(allKnownGroups.map(x=>[x.id,x]));
   promptsById=new Map((pIdRes.data||[]).map(x=>[x.id,x]));
   promptsByCode=new Map((pCodeRes.data||[]).map(x=>[x.prompt_id,x]));
   latestMetric=new Map();

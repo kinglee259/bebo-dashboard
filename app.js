@@ -175,8 +175,7 @@ async function loadDay(day){
   const { data: posts, error } = await supabase.from('post_history')
     .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')
     .gte('submitted_at', start.toISOString())
-    .lt('submitted_at', end.toISOString())
-    .eq('time_is_signal', false);
+    .lt('submitted_at', end.toISOString());
   if(error) throw error;
 
   const validPosts = (posts || []).filter(p => p.group_id !== null);
