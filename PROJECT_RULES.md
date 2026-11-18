@@ -89,3 +89,10 @@ The commit message must:
 
 - For each viral Todo card, show only the **top 6 active groups** using the existing tier/fit ranking.
 - Display those 6 group/status rows in **two columns** on desktop and one column on narrow/mobile screens.
+
+
+## 12. Todo source-group exclusion
+
+- The source/winner group for a viral Todo card is context only and must not appear in that card's top-6 recommended group list.
+- Keep coverage/status for other groups in the lineage unchanged.
+- Apply the existing tier/fit ranking only after excluding the source group.

@@ -250,6 +250,7 @@ async function syncTodo(){
       const best=item.best;
       const family=p.family||best.family||'';
       const rankedGroups=eligible
+        .filter(g=>g.id!==best.group_id)
         .map(g=>{
           const gi=insightById.get(g.id);
           let score=tierScore(g.engagement_tier)*10;
