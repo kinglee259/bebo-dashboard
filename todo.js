@@ -1,16 +1,12 @@
 import { DAILY_MIN_POSTS } from './config.js';
 import { supabase, loadIntelligence, esc, fmt, promptQuote } from './intelligence.js';
 
-const $=id=>document.getElementById(id);
 const VN_TZ='Asia/Ho_Chi_Minh';
 
 function vnDateKey(){
   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:VN_TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
   const x=Object.fromEntries(parts.map(p=>[p.type,p.value]));
   return `${x.year}-${x.month}-${x.day}`;
-}
-function formatToday(){
-  return new Intl.DateTimeFormat('en-GB',{timeZone:VN_TZ,weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date());
 }
 function effectiveWorkflow(g){
   if(g.workflow_status==='following_approval'&&g.workflow_status_since){
@@ -47,8 +43,6 @@ try{
   if(groupRes.error)throw groupRes.error;
 
   const today=vnDateKey();
-  $('todoDate').textContent=formatToday();
-
   const groups=groupRes.data||[];
   const eligible=groups.filter(g=>effectiveWorkflow(g)==='active');
   const insightById=new Map(d.groups.map(g=>[g.id,g]));
@@ -187,10 +181,6 @@ try{
     });
   $('todoDiscovery').innerHTML=discovery.join('')||empty('Chưa có winner đủ rõ để định hướng tìm group mới.');
 
-  $('todoPriorityCount').textContent=kpiTasks.length+crossTasks.length;
-  $('todoCrossCount').textContent=crossTasks.length;
-  $('todoDataCount').textContent=dataTasks.length;
-  $('todoDiscoveryCount').textContent=discovery.length;
 }catch(e){
   document.querySelector('.todo-main').innerHTML=`<section class="todo-section"><div class="todo-empty">${esc(e.message)}</div></section>`;
 }
