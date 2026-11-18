@@ -96,3 +96,12 @@ The commit message must:
 - The source/winner group for a viral Todo card is context only and must not appear in that card's top-6 recommended group list.
 - Keep coverage/status for other groups in the lineage unchanged.
 - Apply the existing tier/fit ranking only after excluding the source group.
+
+
+## 13. Todo snapshot resilience
+
+- Opening/F5 on Todo remains cache-first: render the latest local snapshot and do not auto-query Supabase.
+- Only **Sync Todo** queries fresh DB data.
+- A failure in one Todo section must not discard the successful sections or prevent snapshot persistence.
+- On partial sync, keep the previous cached data for failed sections and save fresh data for successful sections.
+- If there is no previous cached data for a failed section, keep that section empty without discarding the rest of the snapshot.

@@ -108,9 +108,13 @@ function renderCard(task={}) {
 function empty(text){return `<div class="todo-empty">${esc(text)}</div>`;}
 const CACHE_KEY='bebo.todo.snapshot.v4';
 let syncHadError=false;
+let syncFailedSections=new Set();
 
 function renderError(id,message){
   syncHadError=true;
+  const sectionById={todoKpi:'kpi',todoCross:'cross',todoData:'data',todoDiscovery:'discovery'};
+  const section=sectionById[id];
+  if(section)syncFailedSections.add(section);
   const el=$(id);
   if(el)el.innerHTML=empty(`Không tải được block này: ${message}`);
 }
@@ -167,6 +171,7 @@ async function syncTodo(){
   const btn=$('syncTodoBtn');
   const cached=readSnapshot();
   syncHadError=false;
+  syncFailedSections=new Set();
   if(btn){btn.disabled=true;btn.classList.add('is-syncing');btn.textContent='↻ Updating…';}
   updateSyncMeta(cached,'Đang sync…');
   try{
@@ -442,20 +447,31 @@ async function syncTodo(){
     $('todoDiscovery').innerHTML=discovery.length?discovery.map(renderCard).join(''):empty('Chưa có winner đủ rõ để định hướng tìm group mới.');
   }catch(e){renderError('todoDiscovery',e.message);}
 
-    if(syncHadError)throw new Error('Một hoặc nhiều block không sync được.');
+    const freshSections={
+      kpi:kpiTasks,
+      cross:crossTasks,
+      data:dataTasks,
+      discovery
+    };
+    const mergedSections={};
+    for(const key of ['kpi','cross','data','discovery']){
+      mergedSections[key]=syncFailedSections.has(key)
+        ? (Array.isArray(cached?.sections?.[key])?cached.sections[key]:[])
+        : freshSections[key];
+    }
     const snapshot={
       version:4,
       syncedAt:new Date().toISOString(),
       date:today,
-      sections:{
-        kpi:kpiTasks,
-        cross:crossTasks,
-        data:dataTasks,
-        discovery
-      }
+      sections:mergedSections
     };
     localStorage.setItem(CACHE_KEY,JSON.stringify(snapshot));
-    updateSyncMeta(snapshot);
+    if(syncHadError){
+      renderSnapshot(snapshot);
+      updateSyncMeta(snapshot,'Partial sync · đã giữ dữ liệu cũ cho block lỗi');
+    }else{
+      updateSyncMeta(snapshot);
+    }
   }catch(e){
     console.error('Sync Todo failed:',e);
     if(cached){
