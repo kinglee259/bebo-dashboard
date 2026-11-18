@@ -1485,3 +1485,32 @@ body:has(.analysis-main) .breadcrumb{
   .todo-sync-meta{display:none}
   .todo-sync-btn{min-height:29px;padding:0 9px;font-size:10px}
 }
+
+
+/* Todo DNA-first posting cards + linked group references */
+.todo-section-kpi .todo-list{grid-template-columns:1fr}
+.todo-prompt-ref{
+  margin-top:8px;padding:9px 10px;border:1px solid rgba(var(--todo-accent),.13);border-radius:9px;
+  background:rgba(0,0,0,.10)
+}
+.todo-prompt-ref span{display:block;color:rgba(var(--todo-accent),.92);font-size:9px;font-weight:850;letter-spacing:.075em;text-transform:uppercase}
+.todo-prompt-ref p{margin:4px 0 0;color:#c4cdcf;font-size:12.5px;line-height:1.5}
+.todo-where-groups{align-items:flex-start}
+.todo-where-groups>span{padding-top:5px;flex:0 0 auto}
+.todo-group-list{display:flex;flex-wrap:wrap;gap:6px}
+.todo-group-link{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid rgba(var(--todo-accent),.18);border-radius:8px;
+  background:rgba(var(--todo-accent),.055);color:#c7d4d6;text-decoration:none;font-size:11px;font-weight:720;line-height:1.25;
+  transition:border-color .16s ease,background .16s ease,color .16s ease,transform .16s ease
+}
+a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-accent),.34);background:rgba(var(--todo-accent),.10);color:#edf4f5}
+.todo-group-link.no-link{cursor:default}
+.todo-group-stars{color:#d9c58a;font-size:10px;letter-spacing:.03em}
+.todo-why-source{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
+.todo-why-source>span{color:#9fb0b6;font-size:10.5px}
+.todo-section-kpi .todo-card-title{font-size:17px;color:#e7ddd0;letter-spacing:.015em}
+@media(max-width:700px){
+  .todo-section-kpi .todo-card-title{font-size:15.5px}
+  .todo-prompt-ref p{font-size:12px}
+  .todo-group-link{font-size:10.5px;padding:5px 6px}
+}
