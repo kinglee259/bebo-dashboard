@@ -983,3 +983,88 @@ th,td{padding:9px 8px}
   .simple-list article{gap:10px}
   .simple-list>article>b:not(:first-child){white-space:normal;text-align:right}
 }
+
+
+/* Home header density: stronger BeBo brand + one compact KPI toolbar */
+.brand-home{margin:0}
+.brand-home a{
+  color:#eef3f6;
+  font-size:18px;
+  font-weight:850;
+  letter-spacing:.01em;
+  text-decoration:none;
+  line-height:1.1;
+}
+.brand-home a:hover{color:#fff}
+.topbar:has(.brand-home){
+  min-height:0;
+  margin-bottom:8px;
+  padding:0;
+}
+.home-kpi-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  margin:0 0 8px;
+}
+.home-kpi-cluster{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.home-kpi-cluster .tabs{
+  flex:0 0 auto;
+  border-radius:9px;
+  padding:2px;
+}
+.home-kpi-cluster .tab{
+  padding:5px 10px;
+  border-radius:7px;
+  font-size:11px;
+}
+.home-kpi-cluster .date-label{
+  margin:0;
+  color:#75808b;
+  font-size:10px;
+  line-height:1;
+  white-space:nowrap;
+}
+.home-kpi-cluster .date-label::before{
+  content:"·";
+  margin-right:8px;
+  color:#4f5963;
+}
+.home-kpi-cluster .kpi-copy{
+  margin:0;
+  font-size:11px;
+  line-height:1;
+  white-space:nowrap;
+}
+.home-kpi-cluster .kpi-copy::before{
+  content:"|";
+  margin-right:8px;
+  color:#3e4852;
+}
+@media(max-width:700px){
+  .brand-home a{font-size:16px}
+  .topbar:has(.brand-home){margin-bottom:6px}
+  .home-kpi-toolbar{margin-bottom:6px}
+  .home-kpi-cluster{gap:6px}
+  .home-kpi-cluster .tab{padding:4px 7px;font-size:10px}
+  .home-kpi-cluster .date-label{font-size:9px}
+  .home-kpi-cluster .date-label::before{margin-right:6px}
+  .home-kpi-cluster .kpi-copy{font-size:10px}
+  .home-kpi-cluster .kpi-copy::before{margin-right:6px}
+}
+@media(max-width:480px){
+  .home-kpi-cluster{
+    gap:5px;
+    row-gap:5px;
+  }
+  .home-kpi-cluster .date-label{
+    order:3;
+    flex-basis:100%;
+  }
+  .home-kpi-cluster .date-label::before{content:none}
+}
