@@ -7,6 +7,7 @@ export const fmt=n=>new Intl.NumberFormat('en-US').format(Number(n||0));
 export const avg=(a,b)=>b?Math.round((a/b)*10)/10:0;
 export const median=arr=>{const a=[...arr].map(Number).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return 0;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;};
 export const shortText=(s='',n=88)=>{const v=String(s||'').trim();return v.length>n?v.slice(0,n-1).trim()+'…':v};
+export const promptQuote=(prompt={},n=88)=>shortText(prompt?.content||prompt?.title||'Chưa có nội dung',n);
 
 const cleanToken=s=>String(s||'').replace(/^DNA[- ]?\d+\s*/i,'').replace(/^[+\-\s]+|[+\-\s]+$/g,'').trim();
 export function mechanicTokens(dna,category=''){
