@@ -1514,3 +1514,22 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
   .todo-prompt-ref p{font-size:12px}
   .todo-group-link{font-size:10.5px;padding:5px 6px}
 }
+
+
+/* Todo quote-centric posting detail */
+.todo-dna-line{margin-top:5px;color:#b9a96e;font-size:10px;font-weight:800;letter-spacing:.055em}
+.todo-posted{margin-top:10px;padding-top:9px;border-top:1px solid rgba(190,205,210,.12)}
+.todo-posted>span{color:#9ba8ad;font-size:9px;font-weight:850;letter-spacing:.11em}
+.todo-posted-list{display:grid;gap:6px;margin-top:6px}
+.todo-posted-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 7px;
+  border:1px solid rgba(var(--todo-accent),.12);border-radius:8px;background:rgba(0,0,0,.08)
+}
+.todo-posted-row>div{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.todo-posted-row small{color:#aeb8bd;font-size:9px;text-transform:uppercase;letter-spacing:.045em}
+.todo-posted-row em{color:#c6d0d2;font-size:10.5px;font-style:normal}
+.todo-section-kpi .todo-prompt-ref span{color:#9ba8ad}
+@media(max-width:700px){
+  .todo-posted-row{align-items:flex-start;flex-direction:column}
+  .todo-posted-row>div{justify-content:flex-start}
+}

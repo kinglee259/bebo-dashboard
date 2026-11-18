@@ -62,14 +62,22 @@ function renderCard(task={}) {
   const kind=task.kind||'default';
   const status=task.status||'suggested';
   const title=task.title||'Chưa có nội dung';
+  const dna=task.dnaLabel?`<div class="todo-dna-line">${esc(task.dnaLabel)}</div>`:'';
   const quote=task.promptQuote
-    ? `<div class="todo-prompt-ref"><span>${esc(task.promptId||'PROMPT')}</span><p>${esc(task.promptQuote)}</p></div>`
+    ? `<div class="todo-prompt-ref"><span>QUOTE</span><p>${esc(task.promptQuote)}</p></div>`
+    : '';
+  const posted=Array.isArray(task.postedGroups)&&task.postedGroups.length
+    ? `<div class="todo-posted"><span>ĐÃ POST</span><div class="todo-posted-list">${task.postedGroups.map(item=>{
+        const metric=item.metrics?`<em>${esc(item.metrics)}</em>`:'';
+        const state=item.postStatus?`<small>${esc(item.postStatus)}</small>`:'';
+        return `<div class="todo-posted-row">${groupLink(item.group)}<div>${state}${metric}</div></div>`;
+      }).join('')}</div></div>`
     : '';
   const source=task.sourceGroup
     ? `<div class="todo-why-source">${groupLink(task.sourceGroup,{showStars:false})}${task.sourceMetrics?`<span>${esc(task.sourceMetrics)}</span>`:''}</div>`
     : '';
   const whereGroups=Array.isArray(task.whereGroups)&&task.whereGroups.length
-    ? `<div class="todo-where todo-where-groups"><span>WHERE</span><div class="todo-group-list">${task.whereGroups.map(g=>groupLink(g)).join('')}</div></div>`
+    ? `<div class="todo-where todo-where-groups"><span>ĐỀ XUẤT</span><div class="todo-group-list">${task.whereGroups.map(g=>groupLink(g)).join('')}</div></div>`
     : task.where
       ? `<div class="todo-where"><span>WHERE</span><b>${esc(task.where)}</b></div>`
       : '';
@@ -79,13 +87,15 @@ function renderCard(task={}) {
       ${task.meta?`<span class="todo-meta">${esc(task.meta)}</span>`:''}
     </div>
     <strong class="todo-card-title">${esc(title)}</strong>
+    ${dna}
     ${quote}
+    ${posted}
     ${whereGroups}
     <div class="todo-why"><span>WHY</span>${source}<p>${esc(task.why||'')}</p></div>
   </article>`;
 }
 function empty(text){return `<div class="todo-empty">${esc(text)}</div>`;}
-const CACHE_KEY='bebo.todo.snapshot.v3';
+const CACHE_KEY='bebo.todo.snapshot.v4';
 let syncHadError=false;
 
 function renderError(id,message){
@@ -102,7 +112,7 @@ function safeQuote(prompt,n=105){
 function readSnapshot(){
   try{
     const value=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-    return value&&value.version===3&&value.sections?value:null;
+    return value&&value.version===4&&value.sections?value:null;
   }catch(_error){return null;}
 }
 function formatSyncTime(iso){
@@ -198,36 +208,40 @@ async function syncTodo(){
 
   let kpiTasks=[],crossTasks=[],dataTasks=[],discovery=[];
   try{
-    // 01 Today: exploit proven DNA first. KPI is only a light tie-breaker.
-    const conceptMap=new Map();
+    // 01 Today: each card is one concrete quote/prompt. Scale proven quotes before new tests.
+    const promptById=new Map(d.prompts.map(p=>[p.prompt?.id||p.promptId,p]));
+    const promptPosts=new Map();
     for(const post of d.posts){
-      for(const dna of dnaIds(post.prompt?.dna)){
-        if(!conceptMap.has(dna)){
-          conceptMap.set(dna,{dna,wins:0,groups:new Set(),families:new Map(),best:null});
-        }
-        const concept=conceptMap.get(dna);
-        if(post.group_id)concept.groups.add(post.group_id);
-        if(post.isWin)concept.wins++;
-        concept.families.set(post.family,(concept.families.get(post.family)||0)+1);
-        if(post.isWin&&(!concept.best||post.engagement>concept.best.engagement))concept.best=post;
-      }
+      const key=post.prompt?.id||post.promptId||post.prompt_id||post.prompt_code;
+      if(!key)continue;
+      if(!promptPosts.has(key))promptPosts.set(key,[]);
+      promptPosts.get(key).push(post);
     }
 
-    const winnerReuse=[...conceptMap.values()]
-      .filter(c=>c.wins>0&&c.best)
-      .sort((a,b)=>(b.best.engagement-a.best.engagement)||(b.wins-a.wins));
+    const quoteCandidates=d.prompts
+      .map(p=>{
+        const key=p.prompt?.id||p.promptId;
+        const posts=promptPosts.get(key)||[];
+        const realPosts=posts.filter(x=>!x.time_is_signal);
+        const winPosts=realPosts.filter(x=>x.isWin).sort((a,b)=>b.engagement-a.engagement);
+        const best=winPosts[0]||null;
+        const postedGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
+        return {p,posts,realPosts,winPosts,best,postedGroupIds};
+      })
+      .filter(x=>x.best)
+      .sort((a,b)=>(b.best.engagement-a.best.engagement)||(b.winPosts.length-a.winPosts.length));
 
     kpiTasks=[];
-    for(const c of winnerReuse){
-      const best=c.best;
-      const family=[...c.families.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||best.family;
+    for(const item of quoteCandidates){
+      const p=item.p;
+      const best=item.best;
+      const family=p.family||best.family||'';
       const targets=eligible
-        .filter(g=>!c.groups.has(g.id))
+        .filter(g=>!item.postedGroupIds.has(g.id))
         .map(g=>{
           const gi=insightById.get(g.id);
           let score=tierScore(g.engagement_tier)*10;
-          if(gi?.topFamily?.family===family)score+=22;
-          // KPI is intentionally a small tie-breaker, not the main objective.
+          if(gi?.topFamily?.family&&gi.topFamily.family===family)score+=22;
           if(groupCountToday(g)<DAILY_MIN_POSTS)score+=2;
           return {g,score};
         })
@@ -235,50 +249,71 @@ async function syncTodo(){
         .slice(0,5)
         .map(x=>groupRef(x.g));
 
-      if(!targets.length)continue;
-      const source=groupRef(best.group);
+      const postedGroups=item.posts
+        .filter(x=>x.group_id)
+        .sort((a,b)=>(b.engagement-a.engagement)||new Date(b.submitted_at||0)-new Date(a.submitted_at||0))
+        .map(post=>({
+          group:groupRef(post.group),
+          postStatus:post.status||'submitted',
+          metrics:(post.likes||post.comments||post.shares)
+            ? `${fmt(post.likes)} likes · ${fmt(post.comments)} comments · ${fmt(post.shares)} shares`
+            : ''
+        }));
+
+      if(!targets.length&&postedGroups.length<2)continue;
+
       kpiTasks.push(card({
         kind:'kpi',
-        status:'suggested',
-        kicker:'WINNER REUSE',
-        title:c.dna,
-        promptId:postPromptCode(best),
-        promptQuote:safeQuote(best.prompt,130),
+        status:targets.length?'suggested':'done',
+        kicker:'WINNER QUOTE',
+        title:`${p.promptId} · ${p.prompt?.title||safeQuote(p.prompt,72)}`,
+        dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
+        promptQuote:safeQuote(p.prompt,180),
+        postedGroups,
         whereGroups:targets,
-        sourceGroup:source,
-        sourceMetrics:`${fmt(best.comments)} comments · ${fmt(best.shares)} shares · ${fmt(best.likes)} likes`,
-        why:`DNA này đang có winner signal rõ và mới phủ ${c.groups.size} group. Ưu tiên scale sang group ★★★ → ★★ → ★ chưa test trước khi dành slot cho content mới.`,
-        meta:family||''
+        sourceGroup:groupRef(best.group),
+        sourceMetrics:`${fmt(best.likes)} likes · ${fmt(best.comments)} comments · ${fmt(best.shares)} shares`,
+        why:targets.length
+          ? `Quote này đã có winner signal ở ${best.group?.group_code||'group nguồn'}. Ưu tiên scale đúng quote này sang group chưa post, theo tier mạnh trước; KPI chỉ là tie-breaker nhẹ.`
+          : 'Quote này hiện không còn target active phù hợp chưa post trong danh sách group hiện tại.',
+        meta:family
       }));
-      if(kpiTasks.length>=6)break;
+      if(kpiTasks.length>=8)break;
     }
 
-    // New-test fallback appears only after winner reuse opportunities.
-    const newTests=promptCandidates
-      .filter(p=>p.wins===0&&p.groupsTested<2)
+    // Explore only after proven quotes.
+    const newTests=d.prompts
+      .filter(p=>p.wins===0)
       .slice(0,2)
       .map(p=>{
+        const posts=promptPosts.get(p.prompt?.id||p.promptId)||[];
+        const postedGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
         const targets=eligible
-          .filter(g=>!testedGroupIds(p).has(g.id))
+          .filter(g=>!postedGroupIds.has(g.id))
           .sort((a,b)=>tierScore(b.engagement_tier)-tierScore(a.engagement_tier))
           .slice(0,3)
           .map(groupRef);
         return card({
-          kind:'kpi',
-          status:'suggested',
-          kicker:'NEW TEST',
-          title:dnaIds(p.prompt?.dna).join(' + ')||'CONTENT TEST',
-          promptId:p.promptId,
-          promptQuote:safeQuote(p.prompt,130),
+          kind:'kpi',status:'suggested',kicker:'NEW TEST',
+          title:`${p.promptId} · ${p.prompt?.title||safeQuote(p.prompt,72)}`,
+          dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
+          promptQuote:safeQuote(p.prompt,180),
+          postedGroups:posts.filter(x=>x.group_id).map(post=>({
+            group:groupRef(post.group),
+            postStatus:post.status||'submitted',
+            metrics:(post.likes||post.comments||post.shares)
+              ? `${fmt(post.likes)} likes · ${fmt(post.comments)} comments · ${fmt(post.shares)} shares`
+              : ''
+          })),
           whereGroups:targets,
-          why:'Chỉ dùng sau khi đã ưu tiên các Winner Reuse ở trên. Mục tiêu là tìm winner mới, không phải chạy cho đủ KPI.',
+          why:'Đây là quote mới/chưa có winner. Chỉ ưu tiên sau các WINNER QUOTE ở trên.',
           meta:p.family||''
         });
       })
       .filter(task=>task.whereGroups?.length);
 
     kpiTasks.push(...newTests);
-    $('todoKpi').innerHTML=kpiTasks.length?kpiTasks.map(renderCard).join(''):empty('Chưa có winner reuse hoặc content test phù hợp. Sync lại sau khi có thêm dữ liệu.');
+    $('todoKpi').innerHTML=kpiTasks.length?kpiTasks.map(renderCard).join(''):empty('Chưa có quote winner hoặc quote test phù hợp. Sync lại sau khi có thêm dữ liệu.');
   }catch(e){renderError('todoKpi',e.message);}
 
   try{
@@ -416,7 +451,7 @@ async function syncTodo(){
 
     if(syncHadError)throw new Error('Một hoặc nhiều block không sync được.');
     const snapshot={
-      version:3,
+      version:4,
       syncedAt:new Date().toISOString(),
       date:today,
       sections:{
