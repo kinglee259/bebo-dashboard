@@ -105,3 +105,17 @@ The commit message must:
 - A failure in one Todo section must not discard the successful sections or prevent snapshot persistence.
 - On partial sync, keep the previous cached data for failed sections and save fresh data for successful sections.
 - If there is no previous cached data for a failed section, keep that section empty without discarding the rest of the snapshot.
+
+
+## 14. add pr db lineage integrity
+
+- When **add pr db** records a prompt that is a clone/variant of another prompt, persist lineage metadata in the same DB workflow.
+- `source_prompt_id` = the prompt cloned directly.
+- `root_prompt_id` = the durable lineage root. If the source already has a root, inherit that root; otherwise use the source itself as the root.
+- Do not rely on free-text notes such as "clone of ..." as the only lineage evidence.
+- Clone triggers such as **"clone pr ..."**, **"clone prompt ..."**, and **"tạo prompt giống ..."** must preserve lineage through the later **add pr db** operation.
+- After writing the prompt/post, verify all of the following before treating the DB update as complete:
+  - the clone has the expected `source_prompt_id` and `root_prompt_id`;
+  - `post_history` points to the clone record;
+  - Todo lineage coverage resolves the posted group as covered.
+- For Todo coverage, `submitted`, `pending_approval`, and `approved` count as posted. Pending approval does not block the coverage checkmark.
