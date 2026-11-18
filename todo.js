@@ -45,13 +45,64 @@ function card({kind='default',status='suggested',kicker,title,where,why,meta=''}
   </article>`;
 }
 function empty(text){return `<div class="todo-empty">${esc(text)}</div>`;}
+const CACHE_KEY='bebo.todo.snapshot.v1';
+let syncHadError=false;
+
 function renderError(id,message){
+  syncHadError=true;
   const el=$(id);
   if(el)el.innerHTML=empty(`Không tải được block này: ${message}`);
 }
 function postPromptCode(p){return p.prompt?.prompt_id||p.prompt_code||'';}
+function readSnapshot(){
+  try{
+    const value=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    return value&&value.sections?value:null;
+  }catch(_error){return null;}
+}
+function formatSyncTime(iso){
+  if(!iso)return'Chưa sync';
+  try{
+    return 'Last sync · '+new Intl.DateTimeFormat('vi-VN',{
+      timeZone:VN_TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'
+    }).format(new Date(iso));
+  }catch(_error){return'Last sync';}
+}
+function updateSyncMeta(snapshot,message=''){
+  const el=$('todoSyncMeta');
+  if(!el)return;
+  if(message){el.textContent=message;return;}
+  if(!snapshot){el.textContent='Chưa sync';return;}
+  const stale=snapshot.date&&snapshot.date!==vnDateKey();
+  el.textContent=(stale?'Snapshot cũ · ':'')+formatSyncTime(snapshot.syncedAt);
+}
+function renderSnapshot(snapshot){
+  if(!snapshot)return false;
+  const ids={todoKpi:'kpi',todoCross:'cross',todoData:'data',todoDiscovery:'discovery'};
+  for(const [id,key] of Object.entries(ids)){
+    const el=$(id);
+    if(el)el.innerHTML=snapshot.sections?.[key]||empty('Snapshot chưa có dữ liệu cho block này.');
+  }
+  updateSyncMeta(snapshot);
+  return true;
+}
+function renderCachedSnapshot(){
+  const snapshot=readSnapshot();
+  if(renderSnapshot(snapshot))return;
+  const message='Chưa có snapshot. Bấm Sync Todo để tải dữ liệu mới.';
+  ['todoKpi','todoCross','todoData','todoDiscovery'].forEach(id=>{
+    const el=$(id);if(el)el.innerHTML=empty(message);
+  });
+  updateSyncMeta(null);
+}
 
-try{
+async function syncTodo(){
+  const btn=$('syncTodoBtn');
+  const cached=readSnapshot();
+  syncHadError=false;
+  if(btn){btn.disabled=true;btn.classList.add('is-syncing');btn.textContent='↻ Updating…';}
+  updateSyncMeta(cached,'Đang sync…');
+  try{
   const [d,groupRes]=await Promise.all([
     loadIntelligence(),
     supabase.from('facebook_groups')
@@ -262,6 +313,35 @@ try{
     $('todoDiscovery').innerHTML=discovery.join('')||empty('Chưa có winner đủ rõ để định hướng tìm group mới.');
   }catch(e){renderError('todoDiscovery',e.message);}
 
-}catch(e){
-  ['todoKpi','todoCross','todoData','todoDiscovery'].forEach(id=>renderError(id,e.message));
+    if(syncHadError)throw new Error('Một hoặc nhiều block không sync được.');
+    const snapshot={
+      version:1,
+      syncedAt:new Date().toISOString(),
+      date:today,
+      sections:{
+        kpi:$('todoKpi')?.innerHTML||'',
+        cross:$('todoCross')?.innerHTML||'',
+        data:$('todoData')?.innerHTML||'',
+        discovery:$('todoDiscovery')?.innerHTML||''
+      }
+    };
+    localStorage.setItem(CACHE_KEY,JSON.stringify(snapshot));
+    updateSyncMeta(snapshot);
+  }catch(e){
+    console.error('Sync Todo failed:',e);
+    if(cached){
+      renderSnapshot(cached);
+      updateSyncMeta(cached,'Sync failed · đang giữ snapshot cũ');
+    }else{
+      ['todoKpi','todoCross','todoData','todoDiscovery'].forEach(id=>{
+        const el=$(id);if(el)el.innerHTML=empty('Sync failed: '+e.message);
+      });
+      updateSyncMeta(null,'Sync failed');
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.classList.remove('is-syncing');btn.textContent='↻ Sync Todo';}
+  }
 }
+
+renderCachedSnapshot();
+$('syncTodoBtn')?.addEventListener('click',syncTodo);

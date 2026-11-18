@@ -13,9 +13,13 @@
       <div>
         <nav class="breadcrumb" aria-label="Breadcrumb"><a href="./index.html">🥑 BeBo 🥑</a><span>/</span><strong>Todo</strong></nav>
         <h1>Todo</h1>
-        <p class="todo-intro">Read-only suggestion engine · việc nên làm hôm nay dựa trên KPI, DNA, group fit và dữ liệu đã test.</p>
+        <p class="todo-intro">Read-only suggestion engine · F5 đọc snapshot gần nhất, chỉ Sync Todo mới tải dữ liệu mới từ Supabase.</p>
       </div>
-      <div class="top-actions">
+      <div class="top-actions todo-top-actions">
+        <div class="todo-sync-control">
+          <span id="todoSyncMeta" class="todo-sync-meta" aria-live="polite">Chưa sync</span>
+          <button id="syncTodoBtn" class="todo-sync-btn" type="button">↻ Sync Todo</button>
+        </div>
         <details class="nav-menu">
           <summary aria-label="Open navigation" title="Menu">☰</summary>
           <nav>
