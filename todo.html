@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Todo · BeBo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥑%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="todo-page">
+  <div class="app">
+    <header class="topbar todo-topbar">
+      <div>
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="./index.html">🥑 BeBo 🥑</a><span>/</span><strong>Todo</strong></nav>
+        <h1>Todo</h1>
+        <p class="todo-intro">Read-only suggestion engine · việc nên làm hôm nay dựa trên KPI, DNA, group fit và dữ liệu đã test.</p>
+      </div>
+      <div class="top-actions">
+        <details class="nav-menu">
+          <summary aria-label="Open navigation" title="Menu">☰</summary>
+          <nav>
+            <a href="./index.html">Home</a>
+            <a href="./posts.html">Posts</a>
+            <a href="./report.html">Report</a>
+            <a href="./analysis.html">Phân tích</a>
+            <a href="./todo.html">Todo</a>
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main class="todo-main">
+      <section class="todo-hero">
+        <div>
+          <span class="todo-eyebrow">TODAY'S ACTION ENGINE</span>
+          <h2 id="todoDate">—</h2>
+          <p>Ưu tiên theo thứ tự: hoàn thành KPI → cross-group winner → bổ sung dữ liệu group → tìm thêm group phù hợp.</p>
+        </div>
+        <div class="todo-readonly">Read only</div>
+      </section>
+
+      <section class="todo-summary" aria-label="Todo summary">
+        <article><span>Việc ưu tiên</span><strong id="todoPriorityCount">—</strong><small>KPI + cross-group</small></article>
+        <article><span>Cross-group</span><strong id="todoCrossCount">—</strong><small>DNA có tín hiệu</small></article>
+        <article><span>Group thiếu data</span><strong id="todoDataCount">—</strong><small>cần test thêm</small></article>
+        <article><span>Discovery</span><strong id="todoDiscoveryCount">—</strong><small>hướng tìm group mới</small></article>
+      </section>
+
+      <section class="todo-section todo-section-kpi">
+        <div class="todo-section-head"><div><span class="todo-step">01</span><h2>Đăng hôm nay</h2></div><p>Group chưa đủ KPI và content phù hợp nên ưu tiên trước.</p></div>
+        <div id="todoKpi" class="todo-list"></div>
+      </section>
+
+      <section class="todo-section todo-section-cross">
+        <div class="todo-section-head"><div><span class="todo-step">02</span><h2>Cross-group tests</h2></div><p>DNA đã có tín hiệu nhưng chưa được kiểm chứng đủ group.</p></div>
+        <div id="todoCross" class="todo-list"></div>
+      </section>
+
+      <section class="todo-section todo-section-data">
+        <div class="todo-section-head"><div><span class="todo-step">03</span><h2>Group cần thêm dữ liệu</h2></div><p>Chưa đủ số bài để đánh giá group một cách đáng tin.</p></div>
+        <div id="todoData" class="todo-list"></div>
+      </section>
+
+      <section class="todo-section todo-section-discovery">
+        <div class="todo-section-head"><div><span class="todo-step">04</span><h2>Tìm thêm Group</h2></div><p>Mở rộng inventory dựa trên DNA/family đang thắng, không tìm random.</p></div>
+        <div id="todoDiscovery" class="todo-list"></div>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./todo.js"></script>
+</body>
+</html>
