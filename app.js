@@ -206,11 +206,10 @@ async function loadGroups(){
 
 async function loadDay(day){
   const offset = day === 'today' ? 0 : day === 'yesterday' ? -1 : -2;
-  const label = day === 'today' ? 'Today' : day === 'yesterday' ? 'Yesterday' : 'Y-1';
   const start = vnDayStart(offset);
   const end = vnDayStart(offset + 1);
   currentDateKey = vnDateKey(start);
-  $('dateLabel').textContent = `${label} · ${formatVnDate(start)}`;
+  $('dateLabel').textContent = formatVnDate(start);
 
   const { data: posts, error } = await supabase.from('post_history')
     .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')

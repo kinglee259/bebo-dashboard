@@ -984,8 +984,7 @@ th,td{padding:9px 8px}
   .simple-list>article>b:not(:first-child){white-space:normal;text-align:right}
 }
 
-
-/* Home header density: stronger BeBo brand + one compact KPI toolbar */
+/* Home header density: compact topbar, tabs left, date + KPI right */
 .brand-home{margin:0}
 .brand-home a{
   color:#eef3f6;
@@ -1004,44 +1003,40 @@ th,td{padding:9px 8px}
 .home-kpi-toolbar{
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:space-between;
+  gap:12px;
   margin:0 0 8px;
 }
-.home-kpi-cluster{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.home-kpi-cluster .tabs{
+.home-kpi-toolbar>.tabs{
   flex:0 0 auto;
   border-radius:9px;
   padding:2px;
 }
-.home-kpi-cluster .tab{
+.home-kpi-toolbar>.tabs .tab{
   padding:5px 10px;
   border-radius:7px;
   font-size:11px;
 }
-.home-kpi-cluster .date-label{
+.home-kpi-meta{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-left:auto;
+  white-space:nowrap;
+}
+.home-kpi-meta .date-label{
   margin:0;
   color:#75808b;
   font-size:10px;
   line-height:1;
-  white-space:nowrap;
 }
-.home-kpi-cluster .date-label::before{
-  content:"·";
-  margin-right:8px;
-  color:#4f5963;
-}
-.home-kpi-cluster .kpi-copy{
+.home-kpi-meta .kpi-copy{
   margin:0;
   font-size:11px;
   line-height:1;
-  white-space:nowrap;
 }
-.home-kpi-cluster .kpi-copy::before{
+.home-kpi-meta .kpi-copy::before{
   content:"|";
   margin-right:8px;
   color:#3e4852;
@@ -1049,22 +1044,20 @@ th,td{padding:9px 8px}
 @media(max-width:700px){
   .brand-home a{font-size:16px}
   .topbar:has(.brand-home){margin-bottom:6px}
-  .home-kpi-toolbar{margin-bottom:6px}
-  .home-kpi-cluster{gap:6px}
-  .home-kpi-cluster .tab{padding:4px 7px;font-size:10px}
-  .home-kpi-cluster .date-label{font-size:9px}
-  .home-kpi-cluster .date-label::before{margin-right:6px}
-  .home-kpi-cluster .kpi-copy{font-size:10px}
-  .home-kpi-cluster .kpi-copy::before{margin-right:6px}
+  .home-kpi-toolbar{gap:8px;margin-bottom:6px}
+  .home-kpi-toolbar>.tabs .tab{padding:4px 7px;font-size:10px}
+  .home-kpi-meta{gap:6px}
+  .home-kpi-meta .date-label{font-size:9px}
+  .home-kpi-meta .kpi-copy{font-size:10px}
+  .home-kpi-meta .kpi-copy::before{margin-right:6px}
 }
-@media(max-width:480px){
-  .home-kpi-cluster{
-    gap:5px;
-    row-gap:5px;
+@media(max-width:520px){
+  .home-kpi-toolbar{
+    align-items:flex-start;
+    flex-wrap:wrap;
   }
-  .home-kpi-cluster .date-label{
-    order:3;
-    flex-basis:100%;
+  .home-kpi-meta{
+    width:100%;
+    justify-content:flex-end;
   }
-  .home-kpi-cluster .date-label::before{content:none}
 }
