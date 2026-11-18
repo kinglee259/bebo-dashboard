@@ -39,7 +39,7 @@ function groupRef(g){
 }
 function groupLink(g,{showStars=true}={}){
   if(!g)return'';
-  const label=`${esc(g.code||g.group_code||'GR')} · ${esc(g.name||g.group_name||'Group')}`;
+  const label=esc(g.name||g.group_name||'Group');
   const stars=showStars&&tierStars(g.tier||g.engagement_tier)?` <span class="todo-group-stars">${esc(tierStars(g.tier||g.engagement_tier))}</span>`:'';
   const url=g.url||g.group_url||'';
   return url
@@ -55,17 +55,23 @@ function statusBadge(status){
   const [label,cls]=map[status]||map.suggested;
   return `<span class="todo-status todo-status-${cls}">${label}</span>`;
 }
-function card({kind='default',status='suggested',kicker,title,where,why,meta=''}) {
-  return {kind,status,kicker,title:title||'Chưa có nội dung',where,why,meta};
+function card(task={}) {
+  return {
+    ...task,
+    kind:task.kind||'default',
+    status:task.status||'suggested',
+    title:task.title||'Chưa có nội dung',
+    where:task.where||'',
+    why:task.why||'',
+    meta:task.meta||''
+  };
 }
 function renderCard(task={}) {
   const kind=task.kind||'default';
   const status=task.status||'suggested';
-  const title=task.title||'Chưa có nội dung';
+  const headlineText=task.promptQuote||task.title||'Chưa có nội dung';
+  const promptId=task.promptId||'';
   const dna=task.dnaLabel?`<div class="todo-dna-line">${esc(task.dnaLabel)}</div>`:'';
-  const quote=task.promptQuote
-    ? `<div class="todo-prompt-ref"><span>QUOTE</span><p>${esc(task.promptQuote)}</p></div>`
-    : '';
   const posted=Array.isArray(task.postedGroups)&&task.postedGroups.length
     ? `<div class="todo-posted"><span>ĐÃ POST</span><div class="todo-posted-list">${task.postedGroups.map(item=>{
         const metric=item.metrics?`<em>${esc(item.metrics)}</em>`:'';
@@ -73,24 +79,22 @@ function renderCard(task={}) {
         return `<div class="todo-posted-row">${groupLink(item.group)}<div>${state}${metric}</div></div>`;
       }).join('')}</div></div>`
     : '';
+  const suggested=Array.isArray(task.whereGroups)&&task.whereGroups.length
+    ? `<div class="todo-where todo-where-groups"><span>ĐỀ XUẤT</span><div class="todo-group-list">${task.whereGroups.map(g=>groupLink(g)).join('')}</div></div>`
+    : '';
   const source=task.sourceGroup
     ? `<div class="todo-why-source">${groupLink(task.sourceGroup,{showStars:false})}${task.sourceMetrics?`<span>${esc(task.sourceMetrics)}</span>`:''}</div>`
     : '';
-  const whereGroups=Array.isArray(task.whereGroups)&&task.whereGroups.length
-    ? `<div class="todo-where todo-where-groups"><span>ĐỀ XUẤT</span><div class="todo-group-list">${task.whereGroups.map(g=>groupLink(g)).join('')}</div></div>`
-    : task.where
-      ? `<div class="todo-where"><span>WHERE</span><b>${esc(task.where)}</b></div>`
-      : '';
   return `<article class="todo-card todo-card-${esc(kind)} todo-card-state-${esc(status)}">
-    <div class="todo-card-top">
-      <div class="todo-card-tags">${statusBadge(status)}<span class="todo-kicker">${esc(task.kicker||'')}</span></div>
-      ${task.meta?`<span class="todo-meta">${esc(task.meta)}</span>`:''}
+    <div class="todo-card-top todo-card-top-compact">
+      <div class="todo-headline-wrap">
+        <div class="todo-headline">${promptId?`<strong>${esc(promptId)}</strong><span>—</span>`:''}<p>${esc(headlineText)}</p></div>
+        ${dna}
+      </div>
+      ${statusBadge(status)}
     </div>
-    <strong class="todo-card-title">${esc(title)}</strong>
-    ${dna}
-    ${quote}
     ${posted}
-    ${whereGroups}
+    ${suggested}
     <div class="todo-why"><span>WHY</span>${source}<p>${esc(task.why||'')}</p></div>
   </article>`;
 }
@@ -265,8 +269,8 @@ async function syncTodo(){
       kpiTasks.push(card({
         kind:'kpi',
         status:targets.length?'suggested':'done',
-        kicker:'WINNER QUOTE',
-        title:`${p.promptId} · ${p.prompt?.title||safeQuote(p.prompt,72)}`,
+        title:'',
+        promptId:p.promptId,
         dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
         promptQuote:safeQuote(p.prompt,180),
         postedGroups,
@@ -276,7 +280,6 @@ async function syncTodo(){
         why:targets.length
           ? `Quote này đã có winner signal ở ${best.group?.group_code||'group nguồn'}. Ưu tiên scale đúng quote này sang group chưa post, theo tier mạnh trước; KPI chỉ là tie-breaker nhẹ.`
           : 'Quote này hiện không còn target active phù hợp chưa post trong danh sách group hiện tại.',
-        meta:family
       }));
       if(kpiTasks.length>=8)break;
     }
@@ -294,8 +297,9 @@ async function syncTodo(){
           .slice(0,3)
           .map(groupRef);
         return card({
-          kind:'kpi',status:'suggested',kicker:'NEW TEST',
-          title:`${p.promptId} · ${p.prompt?.title||safeQuote(p.prompt,72)}`,
+          kind:'kpi',status:'suggested',
+          title:'',
+          promptId:p.promptId,
           dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
           promptQuote:safeQuote(p.prompt,180),
           postedGroups:posts.filter(x=>x.group_id).map(post=>({
@@ -307,7 +311,6 @@ async function syncTodo(){
           })),
           whereGroups:targets,
           why:'Đây là quote mới/chưa có winner. Chỉ ưu tiên sau các WINNER QUOTE ở trên.',
-          meta:p.family||''
         });
       })
       .filter(task=>task.whereGroups?.length);
