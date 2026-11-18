@@ -1435,3 +1435,27 @@ body:has(.analysis-main) .breadcrumb{
 @media(hover:none){
   .todo-card:hover{transform:none}
 }
+
+
+/* Todo task state — derived from DB on every refresh */
+.todo-card-tags{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
+.todo-status{
+  display:inline-flex;align-items:center;min-height:20px;padding:2px 7px;border-radius:999px;
+  font-size:9px;font-weight:850;letter-spacing:.035em;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.04)
+}
+.todo-status-done{color:#aee1c5;border-color:rgba(143,216,179,.28);background:rgba(143,216,179,.09)}
+.todo-status-progress{color:#e1cd8d;border-color:rgba(217,197,138,.28);background:rgba(217,197,138,.09)}
+.todo-status-suggested{color:#aebac2;border-color:rgba(174,186,194,.16);background:rgba(174,186,194,.055)}
+.todo-card-state-done{
+  border-color:rgba(143,216,179,.22);
+  background:linear-gradient(145deg,rgba(143,216,179,.08),rgba(143,216,179,.018) 56%,rgba(15,20,24,.90)),#141a1f
+}
+.todo-card-state-done .todo-card-title{color:#c7d8cf}
+.todo-card-state-done .todo-why p{color:#9eafa6}
+.todo-card-state-progress{box-shadow:inset 2px 0 0 rgba(217,197,138,.30),inset 0 1px 0 rgba(255,255,255,.035),0 3px 10px rgba(0,0,0,.08)}
+.todo-card-state-suggested{opacity:1}
+@media(max-width:700px){
+  .todo-status{min-height:19px;padding:2px 6px;font-size:8.5px}
+  .todo-card-tags{gap:6px}
+}
