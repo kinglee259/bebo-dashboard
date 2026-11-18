@@ -49,46 +49,11 @@ function showToast(message, type='ok'){
 }
 
 function approvalSelect(group){
-  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" data-posts-count="${Number(group.count ?? 0)}" aria-label="Approval mode for ${esc(group.group_name)}">
+  return `<select class="approval-select ${esc(group.approval_mode)}" data-action="approval" data-group-id="${group.id}" data-current="${esc(group.approval_mode)}" aria-label="Approval mode for ${esc(group.group_name)}">
     <option value="auto" ${group.approval_mode==='auto'?'selected':''}>Auto</option>
     <option value="manual" ${group.approval_mode==='manual'?'selected':''}>Manual</option>
     <option value="unknown" ${group.approval_mode==='unknown'?'selected':''}>Unknown</option>
   </select>`;
-}
-
-function postsSelect(group){
-  const current = Number(group.count ?? 0);
-  const zero = current === 0 ? '<option value="0" selected disabled>0</option>' : '';
-  const options = Array.from({length:10}, (_,i) => i + 1)
-    .map(n => `<option value="${n}" ${n===current?'selected':''}>${n}</option>`)
-    .join('');
-  return `<select class="posts-select" data-action="posts" data-group-id="${group.id}" data-current="${current}" aria-label="Posts count for ${esc(group.group_name)}">${zero}${options}</select>`;
-}
-
-async function updatePosts(selectEl){
-  const groupId = Number(selectEl.dataset.groupId);
-  const previous = Number(selectEl.dataset.current || 0);
-  const next = Number(selectEl.value);
-  if(!groupId || !Number.isInteger(next) || next < 1 || next > 10 || next === previous) return;
-
-  selectEl.disabled = true;
-  const { data, error } = await supabase.from('facebook_groups')
-    .update({posts_count: next, posts_count_date: currentDateKey, updated_at: new Date().toISOString()})
-    .eq('id', groupId)
-    .select('id,posts_count,posts_count_date')
-    .single();
-
-  if(error || !data){
-    selectEl.value = String(previous);
-    selectEl.disabled = false;
-    showToast(error?.message || 'Could not update posts', 'error');
-    return;
-  }
-
-  selectEl.dataset.current = String(next);
-  selectEl.disabled = false;
-  showToast('Posts updated');
-  await refresh();
 }
 
 async function updateApproval(selectEl){
@@ -194,7 +159,7 @@ function engagementStar(group){
 
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
-    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,posts_count,posts_count_date,engagement_tier')
+    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,engagement_tier')
     .eq('posting_status','active');
   if(error) throw error;
   allGroups = data || [];
@@ -225,13 +190,9 @@ async function loadDay(day){
   const excludedGroups = allGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
 
-  const countFor = (g) => day === 'today'
-    ? (g.posts_count_date === currentDateKey ? Number(g.posts_count || 0) : 0)
-    : (byGroup.get(g.id)?.length || 0);
+  const countFor = (g) => byGroup.get(g.id)?.length || 0;
   const eligibleCount = eligibleGroups.length;
-  const postCount = day === 'today'
-    ? allGroups.reduce((sum,g) => sum + countFor(g), 0)
-    : validPosts.length;
+  const postCount = validPosts.length;
   const groupsPosted = eligibleGroups.filter(g => countFor(g) > 0).length;
   const groupsAtMin = eligibleGroups.filter(g => countFor(g) >= DAILY_MIN_POSTS).length;
   const postsStillNeeded = eligibleGroups.reduce((sum,g) => sum + Math.max(0, DAILY_MIN_POSTS - countFor(g)), 0);
@@ -264,11 +225,9 @@ async function loadDay(day){
   );
 
   const rowHtml = (g) => {
-    const postCell = day === 'today'
-      ? postsSelect(g)
-      : (g.count > 0
-          ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
-          : '<strong>0</strong>');
+    const postCell = g.count > 0
+      ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
+      : '<strong>0</strong>';
     return `
       <tr>
         <td class="group-cell" data-label="Group"><a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View posts for ${esc(g.group_code)}">${esc(g.group_code)}</a><a class="group-name-link" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
@@ -300,9 +259,7 @@ $('postsCard').addEventListener('click', () => {
 });
 $('groupsPanel').addEventListener('change', (e) => {
   const approval = e.target.closest('[data-action="approval"]');
-  if(approval) return updateApproval(approval);
-  const posts = e.target.closest('[data-action="posts"]');
-  if(posts) updatePosts(posts);
+  if(approval) updateApproval(approval);
 });
 $('groupsPanel').addEventListener('click', (e) => {
   const button = e.target.closest('[data-action="remove"]');
