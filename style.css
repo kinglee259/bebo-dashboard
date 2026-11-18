@@ -1679,3 +1679,13 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
   .todo-coverage-row{min-height:26px}
   .todo-coverage-status{font-size:13px}
 }
+
+
+/* Proxy timestamps are recorded-time hints, not verified Facebook post times. */
+.report-proxy-time{color:#aeb8bd;font-style:italic;white-space:nowrap}
+
+/* Todo viral coverage: top 6 ranked groups in two columns. */
+.todo-coverage-list{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:4px}
+@media (max-width:680px){
+  .todo-coverage-list{grid-template-columns:1fr}
+}

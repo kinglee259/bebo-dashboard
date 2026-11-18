@@ -19,11 +19,11 @@ function vnDateStart(key){
   return new Date(Date.UTC(y,m-1,d,-7,0,0));
 }
 function fmtDateTime(value,isSignal){
-  if(isSignal) return 'No time';
   if(!value) return '—';
-  return new Intl.DateTimeFormat('en-GB',{
+  const text=new Intl.DateTimeFormat('en-GB',{
     timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'
   }).format(new Date(value));
+  return isSignal?'~'+text:text;
 }
 
 function render(){

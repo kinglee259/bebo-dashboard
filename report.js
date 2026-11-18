@@ -141,7 +141,7 @@ function renderRow(p){
   const g=groups.get(p.group_id),pr=promptsById.get(p.prompt_id)||promptsByCode.get(p.prompt_code),m=latestMetric.get(p.id);
   const code=p.prompt_code||pr?.prompt_id||'—',quote=pr?.content||'—';
   const timeHtml=p.time_is_signal
-    ? '<div class="missing-time-wrap"><input class="post-time-input" type="time" data-post-id="'+p.id+'" aria-label="Enter yesterday time for '+esc(code)+'"><span class="time-save-state" data-time-state="'+p.id+'"></span></div>'
+    ? '<div class="missing-time-wrap"><span class="report-proxy-time" title="Recorded time; Facebook post time not verified">~'+esc(fmtPostTime(p.submitted_at))+'</span><input class="post-time-input" type="time" data-post-id="'+p.id+'" aria-label="Enter verified Facebook time for '+esc(code)+'"><span class="time-save-state" data-time-state="'+p.id+'"></span></div>'
     : esc(fmtPostTime(p.submitted_at));
   const groupHtml=g
     ? '<a class="report-group-link" href="'+esc(g.group_url||'#')+'" target="_blank" rel="noopener" title="'+esc(g.group_name)+'"><strong>'+esc(g.group_code)+'</strong><span>'+esc(shortGroupName(g.group_name))+'</span></a>'

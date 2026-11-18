@@ -76,3 +76,16 @@ The commit message must:
 - Todo coverage is evaluated **per viral lineage and per group**, not by treating one prompt ID as permanently exhausted.
 - In the Todo viral card, list only **Group + status** for coverage: **✓** when that lineage has a post in the group, **-** when it does not.
 - Keep Todo group recommendation ordering based on the existing tier/fit priority. A covered group remains visible; coverage changes its mark, not the lineage model or historical record.
+
+
+## 10. Proxy post-time display
+
+- When a post has `time_is_signal=true`, keep it in counts and timelines.
+- Show its stored `submitted_at` as an approximate recorded-time value prefixed with **~** instead of hiding it as "No time".
+- The **~** marker means the time is a DB/reporting proxy and not a verified Facebook posting timestamp.
+- Where manual time correction is available, keep that correction control alongside the proxy time.
+
+## 11. Todo viral-card group limit
+
+- For each viral Todo card, show only the **top 6 active groups** using the existing tier/fit ranking.
+- Display those 6 group/status rows in **two columns** on desktop and one column on narrow/mobile screens.

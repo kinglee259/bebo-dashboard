@@ -257,7 +257,8 @@ async function syncTodo(){
           if(groupCountToday(g)<DAILY_MIN_POSTS)score+=2;
           return {g,score,covered:item.coveredGroupIds.has(g.id)};
         })
-        .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)));
+        .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
+        .slice(0,6);
 
       const groupCoverage=rankedGroups.map(x=>({group:groupRef(x.g),covered:x.covered}));
       const openCount=groupCoverage.filter(x=>!x.covered).length;
@@ -290,6 +291,7 @@ async function syncTodo(){
         const groupCoverage=eligible
           .map(g=>({g,score:tierScore(g.engagement_tier),covered:coveredGroupIds.has(g.id)}))
           .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
+          .slice(0,6)
           .map(x=>({group:groupRef(x.g),covered:x.covered}));
         return card({
           kind:'kpi',status:groupCoverage.some(x=>!x.covered)?'suggested':'done',
