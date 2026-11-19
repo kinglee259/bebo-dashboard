@@ -247,3 +247,10 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - Pending posts count as covered for Today DNA coverage.
 - Do not cap new-DNA Today work to a fixed two-prompt slice. Show active DNA work that still has uncovered active groups, then append winner-lineage cards.
 - Avoid duplicate Today cards when a winner lineage is already represented by a prioritized new-DNA card.
+
+
+## 22. Todo three-block layout
+
+- Todo keeps only three primary sections: **Đăng hôm nay**, **Action Radar**, and **Tìm thêm Group**.
+- The former **Group cần thêm dữ liệu** section is removed from the UI and from Todo snapshot/cache persistence.
+- Group-data sufficiency may still inform internal ranking or Action Radar logic, but it must not reappear as a separate Todo block unless explicitly requested.

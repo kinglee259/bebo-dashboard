@@ -166,7 +166,7 @@ let syncFailedSections=new Set();
 
 function renderError(id,message){
   syncHadError=true;
-  const sectionById={todoKpi:'kpi',todoAction:'action',todoData:'data',todoDiscovery:'discovery'};
+  const sectionById={todoKpi:'kpi',todoAction:'action',todoDiscovery:'discovery'};
   const section=sectionById[id];
   if(section)syncFailedSections.add(section);
   const el=$(id);
@@ -202,7 +202,7 @@ function updateSyncMeta(snapshot,message=''){
 }
 function renderSnapshot(snapshot){
   if(!snapshot)return false;
-  const ids={todoKpi:'kpi',todoAction:'action',todoData:'data',todoDiscovery:'discovery'};
+  const ids={todoKpi:'kpi',todoAction:'action',todoDiscovery:'discovery'};
   for(const [id,key] of Object.entries(ids)){
     const el=$(id);
     const tasks=Array.isArray(snapshot.sections?.[key])?snapshot.sections[key]:[];
@@ -218,7 +218,7 @@ function renderCachedSnapshot(){
   const snapshot=readSnapshot();
   if(renderSnapshot(snapshot))return;
   const message='Chưa có snapshot. Bấm Sync Todo để tải dữ liệu mới.';
-  ['todoKpi','todoAction','todoData','todoDiscovery'].forEach(id=>{
+  ['todoKpi','todoAction','todoDiscovery'].forEach(id=>{
     const el=$(id);if(el)el.innerHTML=empty(message);
   });
   updateSyncMeta(null);
@@ -282,7 +282,7 @@ async function syncTodo(){
     return promptCandidates.map(p=>({p,score:promptFitScore(p,g)})).filter(x=>x.score>-1000).sort((a,b)=>b.score-a.score)[0]?.p||null;
   }
 
-  let kpiTasks=[],actionTasks=[],dataTasks=[],discovery=[];
+  let kpiTasks=[],actionTasks=[],discovery=[];
   let lineageMap=new Map();
   let quoteCandidates=[];
   try{
@@ -567,35 +567,7 @@ async function syncTodo(){
   }catch(e){renderError('todoAction',e.message);}
 
   try{
-    // 03 Data coverage: 0 = Suggested, 1 = In Progress, >=2 = Done.
-    dataTasks=eligible
-      .map(g=>({g,n:(postsByGroup.get(g.id)||[]).length,gi:insightById.get(g.id)}))
-      .sort((a,b)=>{
-        const state=n=>n>=2?2:n===1?1:0;
-        return state(a.n)-state(b.n)||(a.n-b.n)||(tierScore(b.g.engagement_tier)-tierScore(a.g.engagement_tier));
-      })
-      .map(({g,n,gi})=>{
-        const status=n>=2?'done':n===1?'progress':'suggested';
-        const p=status==='done'?null:bestPromptForGroup(g);
-        return card({
-          kind:'data',status,
-          kicker:status==='done'?`DATA · ${n} bài`:status==='progress'?'DATA · 1/2':'DATA · 0/2',
-          title:status==='done'
-            ? `${g.group_code} · đủ dữ liệu tối thiểu`
-            : p?`${p.promptId} · ${safeQuote(p.prompt,95)}`:`${g.group_code} cần thêm bài test`,
-          whereGroups:[groupRef(g)],
-          why:status==='done'
-            ? `Đã ghi nhận ${n} bài, đạt ngưỡng tối thiểu 2 bài để bắt đầu đánh giá group.`
-            : status==='progress'
-              ? `Đã có 1 bài. Cần ít nhất thêm 1 bài khác trước khi kết luận. ${gi?.topFamily?.family?`Tín hiệu hiện tại nghiêng về ${gi.topFamily.family}.`:''}`
-              : 'Chưa có dữ liệu performance. Nên test 2–3 content khác DNA trước khi xếp tier.'
-        });
-      });
-    $('todoData').innerHTML=dataTasks.length?dataTasks.map(renderCard).join(''):empty('Không có group active để đánh giá data coverage.');
-  }catch(e){renderError('todoData',e.message);}
-
-  try{
-    // 04 Discovery stays Suggested unless the DB contains explicit task-completion evidence.
+    // 03 Discovery stays Suggested unless the DB contains explicit task-completion evidence.
     // Current schema does not link a discovered group to a specific discovery recommendation, so do not fake Done.
     const familyWins=new Map();
     for(const p of d.posts.filter(p=>p.isWin)){
@@ -635,11 +607,10 @@ async function syncTodo(){
     const freshSections={
       kpi:kpiTasks,
       action:actionTasks,
-      data:dataTasks,
       discovery
     };
     const mergedSections={};
-    for(const key of ['kpi','action','data','discovery']){
+    for(const key of ['kpi','action','discovery']){
       mergedSections[key]=syncFailedSections.has(key)
         ? (Array.isArray(cached?.sections?.[key])?cached.sections[key]:[])
         : freshSections[key];
@@ -663,7 +634,7 @@ async function syncTodo(){
       renderSnapshot(cached);
       updateSyncMeta(cached,'Sync failed · đang giữ snapshot cũ');
     }else{
-      ['todoKpi','todoAction','todoData','todoDiscovery'].forEach(id=>{
+      ['todoKpi','todoAction','todoDiscovery'].forEach(id=>{
         const el=$(id);if(el)el.innerHTML=empty('Sync failed: '+e.message);
       });
       updateSyncMeta(null,'Sync failed');
