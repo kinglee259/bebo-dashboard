@@ -161,7 +161,7 @@ function engagementStar(group){
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
     .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,engagement_tier,created_at')
-    .eq('posting_status','active');
+    .in('posting_status',['active','paused']);
   if(error) throw error;
   allGroups = data || [];
 }
@@ -210,8 +210,10 @@ async function loadDay(day){
     byGroup.get(p.group_id).push(p);
   }
 
-  const eligibleGroups = allGroups.filter(g => effectiveWorkflow(g) === 'active');
-  const excludedGroups = allGroups.filter(g => effectiveWorkflow(g) !== 'active');
+  const activeGroups = allGroups.filter(g => g.posting_status === 'active');
+  const pausedGroups = allGroups.filter(g => g.posting_status === 'paused');
+  const eligibleGroups = activeGroups.filter(g => effectiveWorkflow(g) === 'active');
+  const excludedGroups = activeGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
 
   const countFor = (g) => byGroup.get(g.id)?.length || 0;
@@ -239,7 +241,7 @@ async function loadDay(day){
   $('kpiRange').textContent = `${DAILY_TARGET_POSTS} posts / active KPI group`;
 
   // Growth panel: groups added to the DB during the selected VN day.
-  const newGroups = allGroups
+  const newGroups = activeGroups
     .filter(g => {
       if(!g.created_at) return false;
       const created = new Date(g.created_at);
@@ -320,7 +322,7 @@ async function loadDay(day){
     </article>`
   ).join('');
 
-  const rows = allGroups.map(g => {
+  const rows = activeGroups.map(g => {
     const count = countFor(g);
     const state = workflowState(g) || kpiState(count);
     return {...g, count, state};
@@ -349,6 +351,26 @@ async function loadDay(day){
   $('priorityRows').innerHTML=priority.map(rowHtml).join('');
   $('signalRows').innerHTML=signal.map(rowHtml).join('');
   $('followRows').innerHTML=follow.map(rowHtml).join('');
+
+  const pausedHtml = pausedGroups
+    .sort((a,b) =>
+      tierRank(a.engagement_tier) - tierRank(b.engagement_tier) ||
+      a.group_name.localeCompare(b.group_name, 'en', {sensitivity:'base'})
+    )
+    .map(g => `
+      <tr class="paused-group-row">
+        <td class="group-cell" data-label="Group">
+          <a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View posts for ${esc(g.group_code)}">${esc(g.group_code)}</a>
+          <a class="group-name-link paused-group-name" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>
+          ${engagementStar(g)}
+        </td>
+        <td data-label="Approval"><span class="paused-muted">${esc(g.approval_mode || '—')}</span></td>
+        <td data-label="Posts"><span class="paused-muted">—</span></td>
+        <td data-label="Status" class="status paused"><span class="status-label">Paused</span></td>
+        <td data-label="Action"><span class="paused-follow">Follow sau</span></td>
+      </tr>`
+    ).join('');
+  $('pausedRows').innerHTML = pausedHtml || '<tr><td colspan="5" class="paused-empty">Không có group đang tạm dừng.</td></tr>';
 }
 
 async function refresh(){

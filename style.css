@@ -1934,3 +1934,34 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
 @media(hover:none){
   .growth-block:hover{transform:none}
 }
+
+
+/* Paused groups block: visible for follow-up, excluded from active KPI. */
+.paused-panel{
+  grid-column:1/-1;
+  margin-top:0;
+  border-color:#3a3237;
+  background:
+    radial-gradient(circle at 8% 0%,rgba(255,116,139,.07),transparent 30%),
+    var(--panel);
+  box-shadow:inset 2px 0 0 rgba(255,116,139,.20),0 8px 22px rgba(0,0,0,.14)
+}
+.paused-panel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 15px;border-bottom:1px solid #2a3036
+}
+.paused-panel-head h2{margin:3px 0 0;font-size:14px;color:#cbd3d8}
+.paused-kicker{font-size:9px;font-weight:900;letter-spacing:.12em;color:#d98c9a}
+.paused-note{font-size:9px;color:#7f8990}
+.paused-group-row{opacity:.72}
+.paused-group-row:hover{opacity:.88}
+.paused-group-name{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:rgba(220,226,230,.55)}
+.status.paused .status-label{
+  color:#d58a98;border-color:rgba(213,138,152,.28);background:rgba(213,138,152,.07)
+}
+.paused-muted{font-size:10px;color:#6f7a82;text-transform:capitalize}
+.paused-follow{font-size:9px;font-weight:800;color:#a07a83;white-space:nowrap}
+.paused-empty{padding:16px!important;text-align:center;color:#6f7980;font-size:10px}
+@media(max-width:700px){
+  .paused-panel-head{align-items:flex-start;flex-direction:column}
+}
