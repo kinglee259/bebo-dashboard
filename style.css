@@ -1938,8 +1938,7 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
 
 /* Paused groups block: visible for follow-up, excluded from active KPI. */
 .paused-panel{
-  grid-column:1/-1;
-  margin-top:0;
+  margin-top:14px;
   border-color:#3a3237;
   background:
     radial-gradient(circle at 8% 0%,rgba(255,116,139,.07),transparent 30%),
