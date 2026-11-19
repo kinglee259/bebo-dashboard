@@ -236,3 +236,4 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - Pending posts count toward DNA test/coverage counts, but pending posts must not contribute SIGNAL/CONFIRMED performance evidence.
 - DNA status rules: no cohort posts = **NEW**; posted but no win = **TESTING**; at least one analytical win = **SIGNAL**; **CONFIRMED** requires at least 4 analytical posts, at least 3 tested groups, and win rate >= 60%.
 - The checklist target is at least 3 groups per DNA. CONFIRMED DNA is removed from the needs-more-testing rows.
+- Frontend Todo access to `public.visual_10s_dna` must remain SELECT-only for dashboard reader roles; do not grant write access for this checklist.
