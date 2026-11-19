@@ -1732,3 +1732,51 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
 .todo-posted-row .group-tier{
   margin-left:6px
 }
+
+
+/* Todo two-column operating layout + Action Radar. */
+.todo-primary-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.62fr) minmax(300px,.9fr);
+  gap:13px;
+  align-items:start
+}
+.todo-primary-grid>.todo-section{height:100%}
+.todo-section-action{
+  --todo-accent:127,200,255;
+  border-color:#30465a;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.16),0 0 24px rgba(127,200,255,.055)
+}
+.todo-section-action .todo-section-head{
+  align-items:flex-start;
+  flex-direction:column;
+  gap:6px
+}
+.todo-section-action .todo-section-head p{
+  max-width:none;
+  text-align:left
+}
+.todo-action-list{display:grid;gap:8px}
+.todo-action-card{
+  padding:11px 12px;border:1px solid #303a44;border-radius:10px;background:#12181e;
+  box-shadow:inset 2px 0 0 rgba(127,200,255,.18),0 4px 12px rgba(0,0,0,.13)
+}
+.todo-action-label{font-size:8px;font-weight:900;letter-spacing:.10em;color:#7fc8ff}
+.todo-action-title{margin-top:5px;color:#e3e9ed;font-size:13px;font-weight:800;line-height:1.4}
+.todo-action-group{margin-top:7px}
+.todo-action-card p{margin:7px 0 0;color:#9fabb4;font-size:11px;line-height:1.48}
+.todo-action-priority{border-color:#3a5062;box-shadow:inset 2px 0 0 rgba(127,200,255,.38),0 4px 13px rgba(0,0,0,.14),0 0 14px rgba(127,200,255,.03)}
+.todo-action-priority .todo-action-label{color:#91d0ff;text-shadow:0 0 9px rgba(127,200,255,.12)}
+.todo-action-waiting{border-color:#49422f;box-shadow:inset 2px 0 0 rgba(217,197,138,.30),0 4px 12px rgba(0,0,0,.13)}
+.todo-action-waiting .todo-action-label{color:#d9c58a}
+.todo-action-opportunity{border-color:#30453b;box-shadow:inset 2px 0 0 rgba(143,216,179,.30),0 4px 12px rgba(0,0,0,.13)}
+.todo-action-opportunity .todo-action-label{color:#8fd8b3}
+.todo-action-card .todo-group-link{padding:4px 6px;font-size:10.5px}
+@media(max-width:980px){
+  .todo-primary-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .todo-primary-grid{gap:9px}
+  .todo-action-card{padding:10px}
+  .todo-action-title{font-size:12.5px}
+}

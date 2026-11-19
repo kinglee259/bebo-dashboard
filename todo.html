@@ -34,15 +34,17 @@
     </header>
 
     <main class="todo-main">
-      <section class="todo-section todo-section-kpi">
-        <div class="todo-section-head"><div><span class="todo-step">01</span><h2>Đăng hôm nay</h2></div><p>Mỗi viral prompt là một card; group xếp theo tier/fit, ✓ là đã có bài và - là chưa có.</p></div>
-        <div id="todoKpi" class="todo-list"></div>
-      </section>
+      <div class="todo-primary-grid">
+        <section class="todo-section todo-section-kpi">
+          <div class="todo-section-head"><div><span class="todo-step">01</span><h2>Đăng hôm nay</h2></div><p>Nhóm biến thể và group ưu tiên; ✓ là đã có bài, - là chưa có.</p></div>
+          <div id="todoKpi" class="todo-list"></div>
+        </section>
 
-      <section class="todo-section todo-section-cross">
-        <div class="todo-section-head"><div><span class="todo-step">02</span><h2>Cross-group tests</h2></div><p>DNA đã có tín hiệu nhưng chưa được kiểm chứng đủ group.</p></div>
-        <div id="todoCross" class="todo-list"></div>
-      </section>
+        <section class="todo-section todo-section-action">
+          <div class="todo-section-head"><div><span class="todo-step">02</span><h2>Action Radar</h2></div><p>Việc đáng làm tiếp theo, đang chờ và cơ hội cần chú ý.</p></div>
+          <div id="todoAction" class="todo-action-list"></div>
+        </section>
+      </div>
 
       <section class="todo-section todo-section-data">
         <div class="todo-section-head"><div><span class="todo-step">03</span><h2>Group cần thêm dữ liệu</h2></div><p>Chưa đủ số bài để đánh giá group một cách đáng tin.</p></div>

@@ -110,6 +110,19 @@ function renderCard(task={}) {
     <div class="todo-why"><span>WHY</span>${source}<p>${esc(task.why||'')}</p></div>
   </article>`;
 }
+function renderActionCard(task={}){
+  const type=task.actionType||'priority';
+  const labels={priority:'ƯU TIÊN NGAY',waiting:'ĐANG CHỜ',opportunity:'CƠ HỘI TIẾP THEO'};
+  const title=task.title||'Chưa có hành động';
+  const group=task.group?groupLink(task.group):'';
+  return `<article class="todo-action-card todo-action-${esc(type)}">
+    <div class="todo-action-label">${esc(labels[type]||labels.priority)}</div>
+    <div class="todo-action-title">${esc(title)}</div>
+    ${group?`<div class="todo-action-group">${group}</div>`:''}
+    ${task.why?`<p>${esc(task.why)}</p>`:''}
+  </article>`;
+}
+
 function empty(text){return `<div class="todo-empty">${esc(text)}</div>`;}
 const CACHE_KEY='bebo.todo.snapshot.v4';
 let syncHadError=false;
@@ -117,7 +130,7 @@ let syncFailedSections=new Set();
 
 function renderError(id,message){
   syncHadError=true;
-  const sectionById={todoKpi:'kpi',todoCross:'cross',todoData:'data',todoDiscovery:'discovery'};
+  const sectionById={todoKpi:'kpi',todoAction:'action',todoData:'data',todoDiscovery:'discovery'};
   const section=sectionById[id];
   if(section)syncFailedSections.add(section);
   const el=$(id);
@@ -153,7 +166,7 @@ function updateSyncMeta(snapshot,message=''){
 }
 function renderSnapshot(snapshot){
   if(!snapshot)return false;
-  const ids={todoKpi:'kpi',todoCross:'cross',todoData:'data',todoDiscovery:'discovery'};
+  const ids={todoKpi:'kpi',todoAction:'action',todoData:'data',todoDiscovery:'discovery'};
   for(const [id,key] of Object.entries(ids)){
     const el=$(id);
     const tasks=Array.isArray(snapshot.sections?.[key])?snapshot.sections[key]:[];
@@ -166,7 +179,7 @@ function renderCachedSnapshot(){
   const snapshot=readSnapshot();
   if(renderSnapshot(snapshot))return;
   const message='Chưa có snapshot. Bấm Sync Todo để tải dữ liệu mới.';
-  ['todoKpi','todoCross','todoData','todoDiscovery'].forEach(id=>{
+  ['todoKpi','todoAction','todoData','todoDiscovery'].forEach(id=>{
     const el=$(id);if(el)el.innerHTML=empty(message);
   });
   updateSyncMeta(null);
@@ -222,11 +235,13 @@ async function syncTodo(){
     return promptCandidates.map(p=>({p,score:promptFitScore(p,g)})).filter(x=>x.score>-1000).sort((a,b)=>b.score-a.score)[0]?.p||null;
   }
 
-  let kpiTasks=[],crossTasks=[],dataTasks=[],discovery=[];
+  let kpiTasks=[],actionTasks=[],dataTasks=[],discovery=[];
+  let lineageMap=new Map();
+  let quoteCandidates=[];
   try{
     // 01 Today: one card per viral prompt lineage. Every active KPI group stays visible.
     // Coverage is per group: ✓ means this lineage has already been posted there; - means not yet.
-    const lineageMap=new Map();
+    lineageMap=new Map();
     for(const p of d.prompts){
       const key=lineageKey(p.prompt);
       if(!key)continue;
@@ -240,7 +255,7 @@ async function syncTodo(){
       lineageMap.get(key).posts.push(post);
     }
 
-    const quoteCandidates=[...lineageMap.values()]
+    quoteCandidates=[...lineageMap.values()]
       .map(item=>{
         const rootMember=item.members.find(p=>String(p.prompt?.id)===String(item.key));
         const p=rootMember||item.members.sort((a,b)=>(b.wins-a.wins)||(b.bestEngagement-a.bestEngagement))[0];
@@ -320,71 +335,72 @@ async function syncTodo(){
   }catch(e){renderError('todoKpi',e.message);}
 
   try{
-    // 02 Cross-group: DNA with >=2 tested groups is retained as Done instead of disappearing.
-    const conceptMap=new Map();
-    for(const p of d.posts){
-      for(const dna of dnaIds(p.prompt?.dna)){
-        if(!conceptMap.has(dna))conceptMap.set(dna,{dna,posts:0,wins:0,groups:new Set(),families:new Map(),best:null,groupPosts:new Map()});
-        const c=conceptMap.get(dna);
-        c.posts++;if(p.group_id)c.groups.add(p.group_id);if(p.isWin)c.wins++;
-        c.families.set(p.family,(c.families.get(p.family)||0)+1);
-        if(p.group_id){
-          if(!c.groupPosts.has(p.group_id))c.groupPosts.set(p.group_id,[]);
-          c.groupPosts.get(p.group_id).push(p);
-        }
-        if(!c.best||p.engagement>c.best.engagement)c.best=p;
-      }
+    // 02 Action Radar: concise decisions only; no duplicate analytics.
+    actionTasks=[];
+
+    // A. Highest-value winner -> strongest uncovered eligible group.
+    for(const item of quoteCandidates){
+      const p=item.p;
+      const best=item.best;
+      const family=p.family||best.family||'';
+      const target=eligible
+        .filter(g=>g.id!==best.group_id&&!item.coveredGroupIds.has(g.id))
+        .map(g=>{
+          const gi=insightById.get(g.id);
+          let score=tierScore(g.engagement_tier)*10;
+          if(gi?.topFamily?.family&&gi.topFamily.family===family)score+=22;
+          if(groupCountToday(g)<DAILY_MIN_POSTS)score+=2;
+          return {g,score};
+        })
+        .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))[0]?.g;
+      if(!target)continue;
+      actionTasks.push({
+        actionType:'priority',
+        title:`Clone ${p.promptId} sang ${target.group_name}`,
+        group:groupRef(target),
+        why:`Nhóm biến thể này đang có tín hiệu thắng và group này chưa được cover. Tier ${String(target.engagement_tier||'chưa xếp').toUpperCase()} đang được ưu tiên.`
+      });
+      if(actionTasks.filter(x=>x.actionType==='priority').length>=2)break;
     }
 
-    crossTasks=[];
-    const crossCandidates=[...conceptMap.values()]
-      .filter(c=>c.wins>0&&c.best)
-      .sort((a,b)=>(b.wins-a.wins)||(b.best.engagement-a.best.engagement));
-
-    for(const c of crossCandidates){
-      const best=c.best;
-      const family=[...c.families.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||best.family;
-      const done=c.groups.size>=2;
-
-      if(done){
-        const tested=[...c.groups].map(id=>groups.find(g=>g.id===id)||insightById.get(id)).filter(Boolean);
-        crossTasks.push(card({
-          kind:'cross',status:'done',
-          kicker:`${c.dna} · cross-group`,
-          title:`${postPromptCode(best)} · ${safeQuote(best.prompt,105)}`,
-          whereGroups:tested.slice(0,3).map(groupRef),
-          why:`DNA này đã được ghi nhận ở ${c.groups.size} group nên cross-group test được xem là đã thực hiện. Best signal: ${fmt(best.comments)} comments · ${fmt(best.shares)} shares.`,
-          meta:family||''
-        }));
-      }else{
-        const targets=eligible
-          .filter(g=>!c.groups.has(g.id))
-          .map(g=>{
-            const gi=insightById.get(g.id);
-            let score=tierScore(g.engagement_tier);
-            if(gi?.topFamily?.family===family)score+=70;
-            if(groupCountToday(g)<DAILY_MIN_POSTS)score+=15;
-            return {g,score};
-          })
-          .sort((a,b)=>b.score-a.score);
-        const target=targets[0]?.g;
-        if(!target)continue;
-        const source=best.group;
-        crossTasks.push(card({
-          kind:'cross',status:'suggested',
-          kicker:`${c.dna} · cross-group`,
-          title:`${postPromptCode(best)} · ${safeQuote(best.prompt,105)}`,
-          whereGroups:[groupRef(target)],
-          sourceGroup:groupRef(source),
-          sourceMetrics:`${fmt(best.comments)} comments · ${fmt(best.shares)} shares`,
-          why:`Concept này hiện mới phủ ${c.groups.size} group; nên tiếp tục cross-group ở target phù hợp.`,
-          meta:family||''
-        }));
-      }
-      if(crossTasks.length>=8)break;
+    // B. Pending approval stays visible so it is not accidentally reposted.
+    const pending=d.posts
+      .filter(p=>p.status==='pending_approval')
+      .sort((a,b)=>new Date(b.submitted_at||0)-new Date(a.submitted_at||0))
+      .slice(0,2);
+    for(const post of pending){
+      actionTasks.push({
+        actionType:'waiting',
+        title:`Chờ duyệt: ${postPromptCode(post)||'Prompt'}`,
+        group:groupRef(post.group),
+        why:'Bài đã được gửi và đang chờ duyệt. Không cần đăng lại vào group này.'
+      });
     }
-    $('todoCross').innerHTML=crossTasks.length?crossTasks.map(renderCard).join(''):empty('Chưa có DNA winner nào để theo dõi cross-group.');
-  }catch(e){renderError('todoCross',e.message);}
+
+    // C. Next opportunity: active group still below minimum data volume.
+    const opportunity=eligible
+      .map(g=>({g,n:(postsByGroup.get(g.id)||[]).length,p:bestPromptForGroup(g)}))
+      .filter(x=>x.n<2&&x.p)
+      .sort((a,b)=>(a.n-b.n)||(tierScore(b.g.engagement_tier)-tierScore(a.g.engagement_tier)))[0];
+    if(opportunity){
+      actionTasks.push({
+        actionType:'opportunity',
+        title:`Bổ sung dữ liệu cho ${opportunity.g.group_name}`,
+        group:groupRef(opportunity.g),
+        why:`Group mới có ${opportunity.n}/2 bài để đánh giá. Có thể dùng ${opportunity.p.promptId} làm bài test tiếp theo.`
+      });
+    }else if(quoteCandidates.length){
+      const p=quoteCandidates[0].p;
+      actionTasks.push({
+        actionType:'opportunity',
+        title:`Tạo thêm biến thể từ ${p.promptId}`,
+        group:null,
+        why:'Các group ưu tiên đã có dữ liệu tương đối tốt. Có thể mở rộng winner hiện tại bằng một biến thể mới thay vì tạo test ngẫu nhiên.'
+      });
+    }
+
+    $('todoAction').innerHTML=actionTasks.length?actionTasks.map(renderActionCard).join(''):empty('Chưa có hành động ưu tiên mới. Bấm Sync Todo sau khi có thêm bài hoặc metric.');
+  }catch(e){renderError('todoAction',e.message);}
 
   try{
     // 03 Data coverage: 0 = Suggested, 1 = In Progress, >=2 = Done.
@@ -454,12 +470,12 @@ async function syncTodo(){
 
     const freshSections={
       kpi:kpiTasks,
-      cross:crossTasks,
+      action:actionTasks,
       data:dataTasks,
       discovery
     };
     const mergedSections={};
-    for(const key of ['kpi','cross','data','discovery']){
+    for(const key of ['kpi','action','data','discovery']){
       mergedSections[key]=syncFailedSections.has(key)
         ? (Array.isArray(cached?.sections?.[key])?cached.sections[key]:[])
         : freshSections[key];
@@ -483,7 +499,7 @@ async function syncTodo(){
       renderSnapshot(cached);
       updateSyncMeta(cached,'Sync failed · đang giữ snapshot cũ');
     }else{
-      ['todoKpi','todoCross','todoData','todoDiscovery'].forEach(id=>{
+      ['todoKpi','todoAction','todoData','todoDiscovery'].forEach(id=>{
         const el=$(id);if(el)el.innerHTML=empty('Sync failed: '+e.message);
       });
       updateSyncMeta(null,'Sync failed');
