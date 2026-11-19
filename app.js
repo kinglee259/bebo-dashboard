@@ -173,13 +173,37 @@ async function loadDay(day){
   currentDateKey = vnDateKey(start);
   $('dateLabel').textContent = formatVnDate(start);
 
-  const { data: posts, error } = await supabase.from('post_history')
-    .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')
-    .gte('submitted_at', start.toISOString())
-    .lt('submitted_at', end.toISOString());
-  if(error) throw error;
+  const previousStart = vnDayStart(offset - 1);
+  const [postsRes, previousPostsRes] = await Promise.all([
+    supabase.from('post_history')
+      .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')
+      .gte('submitted_at', start.toISOString())
+      .lt('submitted_at', end.toISOString()),
+    supabase.from('post_history')
+      .select('id,group_id,submitted_at')
+      .gte('submitted_at', previousStart.toISOString())
+      .lt('submitted_at', start.toISOString())
+  ]);
+  if(postsRes.error) throw postsRes.error;
+  if(previousPostsRes.error) throw previousPostsRes.error;
 
-  const validPosts = (posts || []).filter(p => p.group_id !== null);
+  const posts = postsRes.data || [];
+  const previousPosts = (previousPostsRes.data || []).filter(p => p.group_id !== null);
+  const previousPostIds = previousPosts.map(p => p.id);
+  let previousMetrics = [];
+  if(previousPostIds.length){
+    const metricsRes = await supabase.from('post_metrics')
+      .select('post_history_id,checked_at')
+      .in('post_history_id', previousPostIds)
+      .gte('checked_at', start.toISOString())
+      .lt('checked_at', end.toISOString());
+    if(metricsRes.error) throw metricsRes.error;
+    previousMetrics = metricsRes.data || [];
+  }
+  const previousUpdatedIds = new Set(previousMetrics.map(m => m.post_history_id));
+  const previousUpdatedCount = previousPosts.filter(p => previousUpdatedIds.has(p.id)).length;
+
+  const validPosts = posts.filter(p => p.group_id !== null);
   const byGroup = new Map();
   for(const p of validPosts){
     if(!byGroup.has(p.group_id)) byGroup.set(p.group_id, []);
@@ -264,6 +288,13 @@ async function loadDay(day){
       done: postsStillNeeded === 0,
       label: 'Đăng đủ KPI group hôm nay',
       detail: postsStillNeeded === 0 ? 'Đã hoàn thành' : `Còn ${postsStillNeeded} bài`
+    },
+    {
+      done: previousPosts.length === 0 || previousUpdatedCount === previousPosts.length,
+      label: 'Cập nhật số liệu các post hôm qua',
+      detail: previousPosts.length === 0
+        ? 'Hôm qua không có post'
+        : `${previousUpdatedCount}/${previousPosts.length} post đã cập nhật hôm nay`
     },
     {
       done: newGroupCount >= NEW_GROUP_DAILY_TARGET,
