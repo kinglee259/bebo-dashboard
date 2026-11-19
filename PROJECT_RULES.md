@@ -237,3 +237,13 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - DNA status rules: no cohort posts = **NEW**; posted but no win = **TESTING**; at least one analytical win = **SIGNAL**; **CONFIRMED** requires at least 4 analytical posts, at least 3 tested groups, and win rate >= 60%.
 - The checklist target is at least 3 groups per DNA. CONFIRMED DNA is removed from the needs-more-testing rows.
 - Frontend Todo access to `public.visual_10s_dna` must remain SELECT-only for dashboard reader roles; do not grant write access for this checklist.
+
+
+## 21. Today prioritizes new Visual DNA
+
+- Todo **Đăng hôm nay** must prioritize active DNA from `public.visual_10s_dna` before historical winner lineages.
+- For a Visual 10S DNA card, only cohort prompts created at or after that DNA row's `created_at` are eligible, preventing historical DNA-code collisions.
+- Coverage for a new-DNA Today card is DNA-wide: if any cohort prompt from that DNA has already been posted to a group, that group is covered for the DNA and must not be recommended as untested.
+- Pending posts count as covered for Today DNA coverage.
+- Do not cap new-DNA Today work to a fixed two-prompt slice. Show active DNA work that still has uncovered active groups, then append winner-lineage cards.
+- Avoid duplicate Today cards when a winner lineage is already represented by a prioritized new-DNA card.

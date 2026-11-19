@@ -300,9 +300,86 @@ async function syncTodo(){
       .sort((a,b)=>(b.best.engagement-a.best.engagement)||(b.winPosts.length-a.winPosts.length));
 
     kpiTasks=[];
+
+    // New Visual 10S DNA comes first in Today.
+    // One card per active DNA with at least one cohort prompt. Coverage is DNA-wide,
+    // so a group already used by another prompt in the same DNA is still treated as covered.
+    const promptMeta=promptMetaRes.data||[];
+    const usedTodayLineages=new Set();
+    const dnaTodayCards=(visualDnaRes.data||[])
+      .map(dna=>{
+        const code=String(dna.dna_code||'').toUpperCase();
+        const cohortStart=new Date(dna.created_at||0).getTime();
+        const matchedMeta=promptMeta.filter(p=>{
+          const created=new Date(p.created_at||0).getTime();
+          return created>=cohortStart&&dnaIds(p.dna).includes(code);
+        });
+        if(!matchedMeta.length)return null;
+
+        const matchedIds=new Set(matchedMeta.map(p=>String(p.id)));
+        const matchedCodes=new Set(matchedMeta.map(p=>String(p.prompt_id||'')).filter(Boolean));
+        const members=d.prompts.filter(p=>
+          matchedIds.has(String(p.prompt?.id))||matchedCodes.has(String(p.prompt?.prompt_id||p.promptId||''))
+        );
+        if(!members.length)return null;
+
+        const dnaPosts=workflowPosts.filter(post=>
+          matchedIds.has(String(post.prompt_id))||matchedCodes.has(String(post.prompt_code||post.prompt?.prompt_id||''))
+        );
+        const coveredGroupIds=new Set(dnaPosts.filter(p=>p.group_id).map(p=>p.group_id));
+        const openGroups=eligible.filter(g=>!coveredGroupIds.has(g.id));
+        if(!openGroups.length)return null;
+
+        const representative=members
+          .slice()
+          .sort((a,b)=>{
+            const at=new Date(a.prompt?.created_at||0).getTime();
+            const bt=new Date(b.prompt?.created_at||0).getTime();
+            return bt-at||(b.wins-a.wins)||(b.bestEngagement-a.bestEngagement);
+          })[0];
+
+        const rankedGroups=eligible
+          .map(g=>({
+            g,
+            covered:coveredGroupIds.has(g.id),
+            score:tierScore(g.engagement_tier)*10+(groupCountToday(g)<DAILY_MIN_POSTS?2:0)
+          }))
+          .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
+          .slice(0,6);
+
+        return {
+          code,
+          name:dna.dna_name||'Visual DNA',
+          representative,
+          openCount:openGroups.length,
+          groupCoverage:rankedGroups.map(x=>({group:groupRef(x.g),covered:x.covered}))
+        };
+      })
+      .filter(Boolean)
+      .sort((a,b)=>(b.openCount-a.openCount)||a.code.localeCompare(b.code));
+
+    for(const item of dnaTodayCards){
+      const p=item.representative;
+      const key=lineageKey(p.prompt);
+      if(key)usedTodayLineages.add(String(key));
+      kpiTasks.push(card({
+        kind:'kpi',
+        status:'suggested',
+        title:'',
+        promptId:p.promptId,
+        dnaLabel:item.code+' · '+item.name,
+        promptQuote:safeQuote(p.prompt,180),
+        groupCoverage:item.groupCoverage,
+        why:'DNA mới đang cần thêm coverage. Ưu tiên test DNA này trước winner cũ; group đã test bất kỳ prompt nào trong cùng DNA được đánh dấu ✓.'
+      }));
+    }
+
+    // Proven winner lineages stay available after new-DNA work.
     for(const item of quoteCandidates){
       const p=item.p;
       const best=item.best;
+      const key=lineageKey(p.prompt);
+      if(key&&usedTodayLineages.has(String(key)))continue;
       const family=p.family||best.family||'';
       const rankedGroups=eligible
         .filter(g=>g.id!==best.group_id)
@@ -330,37 +407,12 @@ async function syncTodo(){
         sourceGroup:groupRef(best.group),
         sourceMetrics:`${fmt(best.likes)} likes · ${fmt(best.comments)} comments · ${fmt(best.shares)} shares`,
         why:openCount
-          ? `Nhóm biến thể này còn ${openCount} group chưa cover. Danh sách giữ nguyên ưu tiên theo tier/fit hiện tại; ✓ chỉ đánh dấu group đã có bài.`
+          ? `Nhóm biến thể này còn ${openCount} group chưa cover. Winner được xếp sau DNA mới.`
           : 'Nhóm biến thể này đã có bài ở toàn bộ group active hiện tại.',
       }));
-      if(kpiTasks.length>=8)break;
+      if(kpiTasks.length>=16)break;
     }
 
-    // Explore only after proven nhóm biến thểs.
-    const newTests=d.prompts
-      .filter(p=>p.wins===0)
-      .slice(0,2)
-      .map(p=>{
-        const key=lineageKey(p.prompt);
-        const posts=lineageMap.get(key)?.posts||[];
-        const coveredGroupIds=new Set(posts.filter(x=>x.group_id).map(x=>x.group_id));
-        const groupCoverage=eligible
-          .map(g=>({g,score:tierScore(g.engagement_tier),covered:coveredGroupIds.has(g.id)}))
-          .sort((a,b)=>b.score-a.score||String(a.g.group_code).localeCompare(String(b.g.group_code)))
-          .slice(0,6)
-          .map(x=>({group:groupRef(x.g),covered:x.covered}));
-        return card({
-          kind:'kpi',status:groupCoverage.some(x=>!x.covered)?'suggested':'done',
-          title:'',
-          promptId:p.promptId,
-          dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
-          promptQuote:safeQuote(p.prompt,180),
-          groupCoverage,
-          why:'Quote mới/chưa có winner. Group vẫn được xếp theo tier để test sau các nhóm biến thể ở trên.',
-        });
-      });
-
-    kpiTasks.push(...newTests);
     $('todoKpi').innerHTML=kpiTasks.length?kpiTasks.map(renderCard).join(''):empty('Chưa có quote winner hoặc quote test phù hợp. Sync lại sau khi có thêm dữ liệu.');
   }catch(e){renderError('todoKpi',e.message);}
 
