@@ -55,6 +55,7 @@ async function ensureDraft(postId,field,value){
 }
 
 async function saveMetric(input){
+  if(input.disabled)return;
   const postId=Number(input.dataset.postId),field=input.dataset.field,raw=input.value.trim();
   const value=raw===''?null:Number(raw);
   if(!postId||!field||(value!==null&&(!Number.isInteger(value)||value<0))){stateText(postId,'Invalid','error');return;}
@@ -69,6 +70,7 @@ async function saveMetric(input){
 }
 
 async function checkNow(button){
+  if(button.disabled)return;
   const postId=Number(button.dataset.postId);
   if(!postId)return;
   button.disabled=true;
@@ -148,18 +150,18 @@ function renderRow(p){
   const groupHtml=g
     ? '<a class="report-group-link" href="'+esc(g.group_url||'#')+'" target="_blank" rel="noopener" title="'+esc(g.group_name)+'"><strong>'+esc(g.group_code)+'</strong><span>'+esc(shortGroupName(g.group_name))+'</span></a>'
     : '<span class="report-unmapped-group" title="'+esc(unresolvedGroupLabel(p))+'">'+esc(shortGroupName(unresolvedGroupLabel(p)))+'</span>';
+  const pending=p.status==='pending_approval';
   const metrics=[['likes_count','Like'],['comments_count','Comment'],['shares_count','Share']].map(pair=>{
     const field=pair[0],label=pair[1];
-    return '<td data-label="'+label+'" class="report-metric-cell"><input class="metric-input" type="number" inputmode="numeric" min="0" step="1" data-post-id="'+p.id+'" data-field="'+field+'" value="'+esc(val(m?.[field]))+'" aria-label="'+label+' for '+esc(code)+'"></td>';
+    return '<td data-label="'+label+'" class="report-metric-cell"><input class="metric-input" type="number" inputmode="numeric" min="0" step="1" data-post-id="'+p.id+'" data-field="'+field+'" value="'+esc(val(m?.[field]))+'" aria-label="'+label+' for '+esc(code)+'" '+(pending?'disabled title="Pending approval — metrics unavailable"':'')+'></td>';
   }).join('');
-  const pending=p.status==='pending_approval';
   return '<tr class="report-data-row'+(pending?' post-pending-row':'')+'">'+
     '<td data-label="Time" class="report-time '+(p.time_is_signal?'missing-time':'')+'">'+timeHtml+'</td>'+
     '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong>'+(pending?'<span class="post-pending-badge">Pending approval</span>':'')+'</td>'+
     '<td data-label="Quote" class="report-quote" title="'+esc(quote)+'">'+esc(quote)+'</td>'+
     '<td data-label="Group" class="report-group">'+groupHtml+'</td>'+
     metrics+
-    '<td data-label="Checked" class="report-check-cell"><button class="check-now-btn" data-action="check" data-post-id="'+p.id+'" title="Check now" aria-label="Check now">✓</button><span class="checked-at" data-checked-at="'+p.id+'">'+esc(fmtChecked(m?.checked_at))+'</span><span class="save-state" data-save-state="'+p.id+'"></span></td>'+
+    '<td data-label="Checked" class="report-check-cell"><button class="check-now-btn" data-action="check" data-post-id="'+p.id+'" '+(pending?'disabled title="Pending approval — nothing to check yet"':'title="Check now"')+' aria-label="Check now">✓</button><span class="checked-at" data-checked-at="'+p.id+'">'+(pending?'Waiting approval':esc(fmtChecked(m?.checked_at)))+'</span><span class="save-state" data-save-state="'+p.id+'"></span></td>'+
   '</tr>';
 }
 

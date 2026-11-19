@@ -199,7 +199,7 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 
 - `post_history.status='pending_approval'` is a **post-level** state and must not automatically change the Facebook Group workflow/status.
 - Pending posts count as posted for lineage/coverage and operational post history, so they must not be suggested for duplicate reposting.
-- Pending posts must be visibly flagged as a warning/follow-up item on operational pages that show the post (Home, Todo, Posts, Report).
+- Pending posts must be visibly flagged as a warning/follow-up item on operational pages that show the post (Home, Todo, Report, Metrics).
 - Pending posts must not contribute engagement results, winners, baselines, prompt performance, DNA/mechanic performance, or other analytical intelligence until they are no longer pending.
 - Group-level `workflow_status='following_approval'` remains a separate state.
 
@@ -207,6 +207,15 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 
 - `facebook_groups.posting_status='paused'` preserves the group, history, and engagement tier but excludes the group from active operations and KPI totals.
 - A paused group is visible only on Home inside the dedicated paused/follow-later block.
-- Paused groups must be removed from Todo, Posts, Report, Analysis/Intelligence, filters, recommendations, active group totals, and KPI calculations.
+- Paused groups must be removed from Todo, Report, Metrics, Analysis/Intelligence, filters, recommendations, active group totals, and KPI calculations.
 - `posting_status='left'` remains distinct from paused.
 - If a group becomes unavailable/deleted externally but the user wants to keep it for later follow-up, use `paused` rather than `left`; it remains visible only in the Home paused block and stays excluded everywhere else.
+
+
+## 18. Report and Metrics page roles
+
+- The UI page backed by `posts.html` is named **Report** and is the read-only/history view of posted content.
+- The UI page backed by `report.html` is named **Metrics** and is the workflow for entering Like / Comment / Share values and confirming checks.
+- A `pending_approval` post in Metrics is read-only: disable Like / Comment / Share inputs and the check button until it is no longer pending.
+- The Home checklist KPI for updating yesterday's metrics excludes `pending_approval` posts from its denominator because no live reaction data can be entered yet.
+- Active Home groups with one or more pending posts must show a restrained amber pulse/badge so the user can manage approval follow-up without changing the group's workflow status.

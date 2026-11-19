@@ -180,7 +180,7 @@ async function loadDay(day){
       .gte('submitted_at', start.toISOString())
       .lt('submitted_at', end.toISOString()),
     supabase.from('post_history')
-      .select('id,group_id,submitted_at')
+      .select('id,group_id,status,submitted_at')
       .gte('submitted_at', previousStart.toISOString())
       .lt('submitted_at', start.toISOString()),
     supabase.from('post_history')
@@ -206,7 +206,6 @@ async function loadDay(day){
     previousMetrics = metricsRes.data || [];
   }
   const previousUpdatedIds = new Set(previousMetrics.map(m => m.post_history_id));
-  const previousUpdatedCount = previousPosts.filter(p => previousUpdatedIds.has(p.id)).length;
 
   const validPosts = posts.filter(p => p.group_id !== null);
   const byGroup = new Map();
@@ -219,6 +218,8 @@ async function loadDay(day){
   const pausedGroups = allGroups.filter(g => g.posting_status === 'paused');
   const activeGroupIds = new Set(activeGroups.map(g => g.id));
   const pendingPosts = (pendingRes.data || []).filter(p => p.group_id === null || activeGroupIds.has(p.group_id));
+  const metricsPreviousPosts = previousPosts.filter(p => activeGroupIds.has(p.group_id) && p.status !== 'pending_approval');
+  const previousUpdatedCount = metricsPreviousPosts.filter(p => previousUpdatedIds.has(p.id)).length;
   const eligibleGroups = activeGroups.filter(g => effectiveWorkflow(g) === 'active');
   const excludedGroups = activeGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
@@ -309,11 +310,11 @@ async function loadDay(day){
       detail: postsStillNeeded === 0 ? 'Đã hoàn thành' : `Còn ${postsStillNeeded} bài`
     },
     {
-      done: previousPosts.length === 0 || previousUpdatedCount === previousPosts.length,
+      done: metricsPreviousPosts.length === 0 || previousUpdatedCount === metricsPreviousPosts.length,
       label: 'Cập nhật số liệu các post hôm qua',
-      detail: previousPosts.length === 0
+      detail: metricsPreviousPosts.length === 0
         ? 'Hôm qua không có post'
-        : `${previousUpdatedCount}/${previousPosts.length} post đã cập nhật hôm nay`
+        : `${previousUpdatedCount}/${metricsPreviousPosts.length} post đã cập nhật hôm nay`
     },
     {
       done: pendingPosts.length === 0,
@@ -344,10 +345,16 @@ async function loadDay(day){
     </article>`
   ).join('');
 
+  const pendingCountByGroup = new Map();
+  for(const p of pendingPosts){
+    if(p.group_id) pendingCountByGroup.set(p.group_id,(pendingCountByGroup.get(p.group_id)||0)+1);
+  }
+
   const rows = activeGroups.map(g => {
     const count = countFor(g);
     const state = workflowState(g) || kpiState(count);
-    return {...g, count, state};
+    const pendingCount = pendingCountByGroup.get(g.id) || 0;
+    return {...g, count, state, pendingCount};
   }).sort((a,b) =>
     tierRank(a.engagement_tier) - tierRank(b.engagement_tier) ||
     approvalRank(a.approval_mode) - approvalRank(b.approval_mode) ||
@@ -359,11 +366,11 @@ async function loadDay(day){
       ? `<a class="post-count-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View ${g.count} posts">${g.count}</a>`
       : '<strong>0</strong>';
     return `
-      <tr>
-        <td class="group-cell" data-label="Group"><a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View posts for ${esc(g.group_code)}">${esc(g.group_code)}</a><a class="group-name-link" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}</td>
+      <tr class="${g.pendingCount?'home-group-pending':''}">
+        <td class="group-cell" data-label="Group"><a class="group-code group-posts-link" href="./posts.html?group=${encodeURIComponent(g.group_code)}&date=${encodeURIComponent(currentDateKey)}" title="View report for ${esc(g.group_code)}">${esc(g.group_code)}</a><a class="group-name-link" href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>${engagementStar(g)}${g.pendingCount?`<span class="home-pending-badge">${g.pendingCount} pending</span>`:''}</td>
         <td data-label="Approval">${approvalSelect(g)}</td>
         <td data-label="Posts">${postCell}</td>
-        <td data-label="Status" class="status ${g.state.cls} ${g.state.tip ? 'status-tip-target' : ''}" ${g.state.tip ? `data-tip="${esc(g.state.tip)}" tabindex="0"` : ''}><span class="status-label">${g.state.label}</span></td>
+        <td data-label="Status" class="status ${g.pendingCount?'pending-post':g.state.cls} ${g.state.tip ? 'status-tip-target' : ''}" ${g.state.tip ? `data-tip="${esc(g.state.tip)}" tabindex="0"` : ''}><span class="status-label">${g.pendingCount?`Pending post · ${g.pendingCount}`:g.state.label}</span></td>
         <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
   };
