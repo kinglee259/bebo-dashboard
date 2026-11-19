@@ -1865,3 +1865,72 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
   .growth-new{grid-column:auto}
   .growth-block{padding:12px;border-radius:11px}
 }
+
+
+/* Home Growth Panel ambient neon depth. */
+.growth-block{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease
+}
+.growth-block::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  width:220px;
+  height:170px;
+  border-radius:50%;
+  filter:blur(16px);
+  opacity:.32;
+  transition:opacity .18s ease,transform .18s ease
+}
+.growth-new::before{
+  right:-70px;
+  top:-85px;
+  background:radial-gradient(circle,rgba(143,216,179,.30) 0%,rgba(143,216,179,.10) 38%,transparent 72%)
+}
+.growth-panel>.growth-block:nth-child(2)::before{
+  left:-85px;
+  top:10%;
+  background:radial-gradient(circle,rgba(217,197,138,.22) 0%,rgba(217,197,138,.075) 40%,transparent 72%)
+}
+.growth-checklist-block::before{
+  right:-75px;
+  bottom:-90px;
+  background:radial-gradient(circle,rgba(127,200,255,.28) 0%,rgba(127,200,255,.085) 40%,transparent 72%)
+}
+.growth-block::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  pointer-events:none;
+  inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.022),transparent 34%,rgba(255,255,255,.008));
+  opacity:.8
+}
+.growth-block:hover{
+  transform:translateY(-1px);
+  border-color:#3a4652;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 26px rgba(0,0,0,.18),0 0 22px rgba(127,200,255,.04)
+}
+.growth-block:hover::before{
+  opacity:.46;
+  transform:scale(1.04)
+}
+.growth-new:hover{
+  border-color:rgba(143,216,179,.36);
+  box-shadow:inset 2px 0 0 rgba(143,216,179,.34),0 10px 26px rgba(0,0,0,.18),0 0 24px rgba(143,216,179,.06)
+}
+.growth-panel>.growth-block:nth-child(2):hover{
+  border-color:rgba(217,197,138,.30);
+  box-shadow:inset 2px 0 0 rgba(217,197,138,.24),0 10px 26px rgba(0,0,0,.18),0 0 22px rgba(217,197,138,.045)
+}
+.growth-checklist-block:hover{
+  border-color:rgba(127,200,255,.34);
+  box-shadow:inset 2px 0 0 rgba(127,200,255,.30),0 10px 26px rgba(0,0,0,.18),0 0 24px rgba(127,200,255,.06)
+}
+@media(hover:none){
+  .growth-block:hover{transform:none}
+}
