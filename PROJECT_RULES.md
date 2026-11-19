@@ -218,7 +218,7 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - The UI page backed by `report.html` is named **Metrics** and is the workflow for entering Like / Comment / Share values and confirming checks.
 - A `pending_approval` post in Metrics is read-only: disable Like / Comment / Share inputs and the check button until it is no longer pending.
 - The Home checklist KPI for updating yesterday's metrics excludes `pending_approval` posts from its denominator because no live reaction data can be entered yet.
-- Active Home groups with one or more pending posts must show a restrained amber pulse/badge so the user can manage approval follow-up without changing the group's workflow status.
+- Active Home groups with one or more pending posts must show a restrained amber pulse/badge so the user can manage approval follow-up without changing or replacing the group's own workflow/status label.
 
 
 ## 19. Unranked tier icon
