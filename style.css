@@ -1997,7 +1997,7 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
   color:#cbbd96;font-size:8px;font-weight:900;letter-spacing:.04em;white-space:nowrap
 }
 .status.pending-post .status-label{
-  color:#cbbd96;border-color:rgba(201,184,132,.20);background:rgba(201,184,132,.045)
+  color:#aaa38f;border-color:rgba(170,163,143,.18);background:rgba(170,163,143,.028)
 }
 .post-pending-row{
   box-shadow:inset 3px 0 0 rgba(201,184,132,.34);
