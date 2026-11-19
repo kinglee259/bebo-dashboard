@@ -170,7 +170,10 @@ function renderSnapshot(snapshot){
   for(const [id,key] of Object.entries(ids)){
     const el=$(id);
     const tasks=Array.isArray(snapshot.sections?.[key])?snapshot.sections[key]:[];
-    if(el)el.innerHTML=tasks.length?tasks.map(renderCard).join(''):empty('Snapshot chưa có dữ liệu cho block này.');
+    if(el){
+      const renderer=key==='action'?renderActionCard:renderCard;
+      el.innerHTML=tasks.length?tasks.map(renderer).join(''):empty('Snapshot chưa có dữ liệu cho block này.');
+    }
   }
   updateSyncMeta(snapshot);
   return true;
@@ -356,9 +359,9 @@ async function syncTodo(){
       if(!target)continue;
       actionTasks.push({
         actionType:'priority',
-        title:`Clone ${p.promptId} sang ${target.group_name}`,
+        title:`Tạo biến thể từ ${p.promptId} cho ${target.group_name}`,
         group:groupRef(target),
-        why:`Nhóm biến thể này đang có tín hiệu thắng và group này chưa được cover. Tier ${String(target.engagement_tier||'chưa xếp').toUpperCase()} đang được ưu tiên.`
+        why:`Nhóm biến thể này đang có tín hiệu thắng và group này chưa được cover. Nhóm tier ${String(target.engagement_tier||'chưa xếp').toUpperCase()} đang được ưu tiên.`
       });
       if(actionTasks.filter(x=>x.actionType==='priority').length>=2)break;
     }
