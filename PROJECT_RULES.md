@@ -209,3 +209,4 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - A paused group is visible only on Home inside the dedicated paused/follow-later block.
 - Paused groups must be removed from Todo, Posts, Report, Analysis/Intelligence, filters, recommendations, active group totals, and KPI calculations.
 - `posting_status='left'` remains distinct from paused.
+- If a group becomes unavailable/deleted externally but the user wants to keep it for later follow-up, use `paused` rather than `left`; it remains visible only in the Home paused block and stays excluded everywhere else.
