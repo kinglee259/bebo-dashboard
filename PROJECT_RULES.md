@@ -232,7 +232,7 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 
 - `public.visual_10s_dna` is the source of truth for the new Visual 10S DNA cohort shown in Todo Action Radar.
 - The **DNA MỚI CẦN TEST THÊM** checklist must appear at the top of Action Radar.
-- Prevent historical DNA-code collisions by counting only prompts whose `created_at` is at or after the matching `visual_10s_dna.created_at`.
+- Prevent historical DNA-code collisions by matching both the DNA code and the Visual 10S concept/name. A numeric code match alone is not sufficient.
 - Pending posts count toward DNA test/coverage counts, but pending posts must not contribute SIGNAL/CONFIRMED performance evidence.
 - DNA status rules: no cohort posts = **NEW**; posted but no win = **TESTING**; at least one analytical win = **SIGNAL**; **CONFIRMED** requires at least 4 analytical posts, at least 3 tested groups, and win rate >= 60%.
 - The checklist target is at least 3 groups per DNA. CONFIRMED DNA is removed from the needs-more-testing rows.
@@ -242,7 +242,7 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 ## 21. Today prioritizes new Visual DNA
 
 - Todo **Đăng hôm nay** must prioritize active DNA from `public.visual_10s_dna` before historical winner lineages.
-- For a Visual 10S DNA card, only cohort prompts created at or after that DNA row's `created_at` are eligible, preventing historical DNA-code collisions.
+- For a Visual 10S DNA card, a prompt is eligible only when both its DNA code and concept text match the corresponding `visual_10s_dna` row; do not use the table row's `created_at` as a cutoff.
 - Coverage for a new-DNA Today card is DNA-wide: if any cohort prompt from that DNA has already been posted to a group, that group is covered for the DNA and must not be recommended as untested.
 - Pending posts count as covered for Today DNA coverage.
 - Do not cap new-DNA Today work to a fixed two-prompt slice. Show active DNA work that still has uncovered active groups, then append winner-lineage cards.

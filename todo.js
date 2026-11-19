@@ -18,6 +18,23 @@ function effectiveWorkflow(g){
 function dnaIds(dna=''){
   return [...new Set(String(dna).match(/DNA-\d+/gi)||[])].map(x=>x.toUpperCase());
 }
+function visualDnaMatchesPrompt(dna,promptDna=''){
+  const code=String(dna?.dna_code||'').toUpperCase();
+  if(!code||!dnaIds(promptDna).includes(code))return false;
+  const normalize=s=>String(s||'')
+    .toUpperCase()
+    .replace(/DNA-\d+/g,' ')
+    .replace(/[^A-Z0-9]+/g,' ')
+    .trim();
+  const stop=new Set(['DNA','THE','AND','WITH','FOR','NO','OF','A','AN','TO']);
+  const nameTokens=normalize(dna?.dna_name)
+    .split(/\s+/)
+    .filter(x=>x.length>=4&&!stop.has(x));
+  const promptText=normalize(promptDna);
+  const overlap=nameTokens.filter(t=>promptText.includes(t));
+  const minOverlap=nameTokens.length<=2?1:2;
+  return overlap.length>=minOverlap;
+}
 function shortGroup(name='',limit=3){
   const words=String(name).trim().split(/\s+/).filter(Boolean);
   return words.slice(0,limit).join(' ')+(words.length>limit?'...':'');
@@ -302,18 +319,14 @@ async function syncTodo(){
     kpiTasks=[];
 
     // New Visual 10S DNA comes first in Today.
-    // One card per active DNA with at least one cohort prompt. Coverage is DNA-wide,
+    // One card per active DNA with at least one concept-matched prompt. Coverage is DNA-wide,
     // so a group already used by another prompt in the same DNA is still treated as covered.
     const promptMeta=promptMetaRes.data||[];
     const usedTodayLineages=new Set();
     const dnaTodayCards=(visualDnaRes.data||[])
       .map(dna=>{
         const code=String(dna.dna_code||'').toUpperCase();
-        const cohortStart=new Date(dna.created_at||0).getTime();
-        const matchedMeta=promptMeta.filter(p=>{
-          const created=new Date(p.created_at||0).getTime();
-          return created>=cohortStart&&dnaIds(p.dna).includes(code);
-        });
+        const matchedMeta=promptMeta.filter(p=>visualDnaMatchesPrompt(dna,p.dna));
         if(!matchedMeta.length)return null;
 
         const matchedIds=new Set(matchedMeta.map(p=>String(p.id)));
@@ -421,16 +434,12 @@ async function syncTodo(){
     actionTasks=[];
 
     // Visual 10S DNA checklist is always first in Action Radar.
-    // public.visual_10s_dna is the source of truth. Only prompts created at/after
-    // the DNA row's created_at belong to this new-rule cohort, preventing old code collisions.
+    // public.visual_10s_dna is the source of truth. Match by DNA code + concept text,
+    // preventing historical prompts that reused the same numeric DNA code from contaminating coverage.
     const promptMeta=promptMetaRes.data||[];
     const visualDnaRows=(visualDnaRes.data||[]).map(dna=>{
       const code=String(dna.dna_code||'').toUpperCase();
-      const cohortStart=new Date(dna.created_at||0).getTime();
-      const matchedPrompts=promptMeta.filter(p=>{
-        const created=new Date(p.created_at||0).getTime();
-        return created>=cohortStart&&dnaIds(p.dna).includes(code);
-      });
+      const matchedPrompts=promptMeta.filter(p=>visualDnaMatchesPrompt(dna,p.dna));
       const promptIds=new Set(matchedPrompts.map(p=>p.id));
       const promptCodes=new Set(matchedPrompts.map(p=>p.prompt_id).filter(Boolean));
       const coveragePosts=workflowPosts.filter(p=>promptIds.has(p.prompt_id)||promptCodes.has(p.prompt_code));
