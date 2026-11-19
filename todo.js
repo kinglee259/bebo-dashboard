@@ -112,7 +112,7 @@ function renderCard(task={}) {
 }
 function renderActionCard(task={}){
   const type=task.actionType||'priority';
-  const labels={priority:'ƯU TIÊN NGAY',waiting:'ĐANG CHỜ',opportunity:'CƠ HỘI TIẾP THEO'};
+  const labels={priority:'ƯU TIÊN NGAY',waiting:'ĐANG CHỜ',opportunity:'CƠ HỘI TIẾP THEO',discovery:'TÌM THÊM GROUP'};
   const title=task.title||'Chưa có hành động';
   const group=task.group?groupLink(task.group):'';
   return `<article class="todo-action-card todo-action-${esc(type)}">
@@ -399,6 +399,38 @@ async function syncTodo(){
         title:`Tạo thêm biến thể từ ${p.promptId}`,
         group:null,
         why:'Các group ưu tiên đã có dữ liệu tương đối tốt. Có thể mở rộng winner hiện tại bằng một biến thể mới thay vì tạo test ngẫu nhiên.'
+      });
+    }
+
+    // D. Discovery: surface one compact group-expansion action when the strong-group inventory is thin.
+    const strongGroups=eligible.filter(g=>g.engagement_tier==='s'||g.engagement_tier==='a');
+    if(strongGroups.length<6){
+      const familyWins=new Map();
+      for(const p of d.posts.filter(p=>p.isWin)){
+        const family=p.family||'Khác';
+        if(!familyWins.has(family))familyWins.set(family,{family,wins:0,comments:0,best:p});
+        const row=familyWins.get(family);
+        row.wins++;
+        row.comments+=p.comments||0;
+        if((p.engagement||0)>(row.best?.engagement||0))row.best=p;
+      }
+      const focus=[...familyWins.values()]
+        .sort((a,b)=>(b.wins-a.wins)||(b.comments-a.comments))[0];
+      const keywordMap={
+        'Gia đình':'Mom / Motherhood / Family',
+        'Phụ nữ':'Women 40+ / Women Life',
+        'Tình cảm':'Women Relationships / Love',
+        'Đời sống':'Everyday Life / Grocery',
+        'Cảm xúc':'Self Love / Women Feelings',
+        'Công việc':'Women at Work',
+        'Hoài niệm':'Nostalgia / Childhood Memories',
+        'Khác':'Women 40+ / Everyday Life'
+      };
+      actionTasks.push({
+        actionType:'discovery',
+        title:`Tìm thêm 5 group · ${keywordMap[focus?.family]||keywordMap['Khác']}`,
+        group:focus?.best?.group?groupRef(focus.best.group):null,
+        why:`Hiện có ${strongGroups.length} group tier S/A đang active. Nên mở rộng bằng audience tương tự các group mạnh hiện tại, ưu tiên comment thật thay vì chỉ nhìn số thành viên.`
       });
     }
 
