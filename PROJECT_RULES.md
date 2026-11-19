@@ -226,3 +226,13 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - Do not show visible `UNRANKED`, `Unranked`, or `---` text for a group with no assigned tier.
 - Use the single neutral icon **◌** everywhere the unranked tier is displayed.
 - Accessibility/title text may say **Chưa xếp hạng**; the internal `unranked` value/class may remain for logic and styling.
+
+
+## 20. Visual 10S DNA Action Radar
+
+- `public.visual_10s_dna` is the source of truth for the new Visual 10S DNA cohort shown in Todo Action Radar.
+- The **DNA MỚI CẦN TEST THÊM** checklist must appear at the top of Action Radar.
+- Prevent historical DNA-code collisions by counting only prompts whose `created_at` is at or after the matching `visual_10s_dna.created_at`.
+- Pending posts count toward DNA test/coverage counts, but pending posts must not contribute SIGNAL/CONFIRMED performance evidence.
+- DNA status rules: no cohort posts = **NEW**; posted but no win = **TESTING**; at least one analytical win = **SIGNAL**; **CONFIRMED** requires at least 4 analytical posts, at least 3 tested groups, and win rate >= 60%.
+- The checklist target is at least 3 groups per DNA. CONFIRMED DNA is removed from the needs-more-testing rows.

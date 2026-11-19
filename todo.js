@@ -112,6 +112,25 @@ function renderCard(task={}) {
 }
 function renderActionCard(task={}){
   const type=task.actionType||'priority';
+  if(type==='dna'){
+    const rows=Array.isArray(task.dnaChecklist)?task.dnaChecklist:[];
+    const list=rows.length
+      ? '<div class="todo-dna-checklist">'+rows.map(item=>
+          '<div class="todo-dna-check-row">'+
+            '<span class="todo-dna-check-mark" aria-hidden="true">○</span>'+
+            '<div class="todo-dna-check-copy"><strong>'+esc(item.code)+' · '+esc(item.name)+'</strong>'+
+              '<small>'+esc(item.mediaType)+' · '+esc(item.posts)+' post · '+esc(item.groups)+' group'+(item.needGroups>0?' · cần thêm '+esc(item.needGroups)+' group':'')+'</small></div>'+
+            '<span class="todo-dna-check-status is-'+esc(String(item.status||'NEW').toLowerCase())+'">'+esc(item.status||'NEW')+'</span>'+
+          '</div>'
+        ).join('')+'</div>'
+      : '<div class="todo-dna-empty">Đã đủ coverage cho toàn bộ DNA active.</div>';
+    return '<article class="todo-action-card todo-action-dna">'+
+      '<div class="todo-action-label">DNA MỚI CẦN TEST THÊM</div>'+
+      '<div class="todo-action-title">'+esc(task.title||'Visual 10S DNA')+'</div>'+
+      list+
+      (task.why?'<p>'+esc(task.why)+'</p>':'')+
+    '</article>';
+  }
   const labels={priority:'ƯU TIÊN NGAY',waiting:'ĐANG CHỜ',opportunity:'CƠ HỘI TIẾP THEO',discovery:'TÌM THÊM GROUP'};
   const title=task.title||'Chưa có hành động';
   const group=task.group?groupLink(task.group):'';
@@ -196,13 +215,20 @@ async function syncTodo(){
   if(btn){btn.disabled=true;btn.classList.add('is-syncing');btn.textContent='↻ Updating…';}
   updateSyncMeta(cached,'Đang sync…');
   try{
-  const [d,groupRes]=await Promise.all([
+  const [d,groupRes,visualDnaRes,promptMetaRes]=await Promise.all([
     loadIntelligence(),
     supabase.from('facebook_groups')
       .select('id,group_code,group_name,group_url,posting_status,workflow_status,workflow_status_since,posts_count,posts_count_date,engagement_tier,approval_mode,target_fit')
-      .eq('posting_status','active')
+      .eq('posting_status','active'),
+    supabase.from('visual_10s_dna')
+      .select('id,dna_code,dna_name,media_type,status,created_at')
+      .eq('status','active')
+      .order('id',{ascending:true}),
+    supabase.from('prompts')
+      .select('id,prompt_id,dna,created_at')
+      .not('dna','is',null)
   ]);
-  if(groupRes.error)throw groupRes.error;
+  for(const r of [groupRes,visualDnaRes,promptMetaRes])if(r.error)throw r.error;
 
   const today=vnDateKey();
   const groups=groupRes.data||[];
@@ -341,6 +367,47 @@ async function syncTodo(){
   try{
     // 02 Action Radar: concise decisions only; no duplicate analytics.
     actionTasks=[];
+
+    // Visual 10S DNA checklist is always first in Action Radar.
+    // public.visual_10s_dna is the source of truth. Only prompts created at/after
+    // the DNA row's created_at belong to this new-rule cohort, preventing old code collisions.
+    const promptMeta=promptMetaRes.data||[];
+    const visualDnaRows=(visualDnaRes.data||[]).map(dna=>{
+      const code=String(dna.dna_code||'').toUpperCase();
+      const cohortStart=new Date(dna.created_at||0).getTime();
+      const matchedPrompts=promptMeta.filter(p=>{
+        const created=new Date(p.created_at||0).getTime();
+        return created>=cohortStart&&dnaIds(p.dna).includes(code);
+      });
+      const promptIds=new Set(matchedPrompts.map(p=>p.id));
+      const promptCodes=new Set(matchedPrompts.map(p=>p.prompt_id).filter(Boolean));
+      const coveragePosts=workflowPosts.filter(p=>promptIds.has(p.prompt_id)||promptCodes.has(p.prompt_code));
+      const analyticalPosts=d.posts.filter(p=>promptIds.has(p.prompt_id)||promptCodes.has(p.prompt_code));
+      const groupsTested=new Set(coveragePosts.map(p=>p.group_id).filter(Boolean)).size;
+      const wins=analyticalPosts.filter(p=>p.isWin);
+      const confirmed=analyticalPosts.length>=4&&groupsTested>=3&&(wins.length/analyticalPosts.length)>=.6;
+      const status=coveragePosts.length===0?'NEW':confirmed?'CONFIRMED':wins.length>0?'SIGNAL':'TESTING';
+      return {
+        code,
+        name:dna.dna_name||'Visual DNA',
+        mediaType:dna.media_type||'media',
+        posts:coveragePosts.length,
+        groups:groupsTested,
+        needGroups:Math.max(0,3-groupsTested),
+        status
+      };
+    });
+    const dnaNeedMore=visualDnaRows
+      .filter(x=>x.status!=='CONFIRMED')
+      .sort((a,b)=>(a.groups-b.groups)||(a.posts-b.posts)||a.code.localeCompare(b.code));
+    actionTasks.push({
+      actionType:'dna',
+      title:dnaNeedMore.length?dnaNeedMore.length+' DNA đang cần thêm coverage':'Visual DNA mới đã đủ coverage',
+      dnaChecklist:dnaNeedMore,
+      why:dnaNeedMore.length
+        ? 'Coverage tính cả post pending; SIGNAL/CONFIRMED chỉ dùng post đã có dữ liệu phân tích và không pending. Mục tiêu tối thiểu là test trên 3 group.'
+        : 'Toàn bộ Visual 10S DNA active hiện tại đã đạt điều kiện coverage/xác nhận.'
+    });
 
     // A. Highest-value winner -> strongest uncovered eligible group.
     for(const item of quoteCandidates){
