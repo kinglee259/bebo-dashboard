@@ -27,8 +27,13 @@ function testedGroupIds(promptRow){return promptRow?.groups instanceof Set?promp
 function lineageKey(prompt={}){
   return prompt?.root_prompt_id||prompt?.id||prompt?.prompt_id||'';
 }
-function tierStars(tier){
-  return tier==='s'?'★★★':tier==='a'?'★★':tier==='b'?'★':'';
+function tierMarkup(tier){
+  const t=String(tier||'').toLowerCase();
+  if(t==='s')return '<span class="group-tier tier-s" title="S · breakout" aria-label="S tier">★★★</span>';
+  if(t==='a')return '<span class="group-tier tier-a" title="A · strong engagement" aria-label="A tier">★★</span>';
+  if(t==='b')return '<span class="group-tier tier-b" title="B · light engagement" aria-label="B tier">★</span>';
+  if(t==='c')return '<span class="group-tier tier-c" title="C · tested, weak" aria-label="C tier">--</span>';
+  return '<span class="group-tier tier-unranked" title="Unranked · follow" aria-label="Unranked">---</span>';
 }
 function groupRef(g){
   if(!g)return null;
@@ -43,7 +48,7 @@ function groupRef(g){
 function groupLink(g,{showStars=true}={}){
   if(!g)return'';
   const label=esc(g.name||g.group_name||'Group');
-  const stars=showStars&&tierStars(g.tier||g.engagement_tier)?` <span class="todo-group-stars">${esc(tierStars(g.tier||g.engagement_tier))}</span>`:'';
+  const stars=showStars?` ${tierMarkup(g.tier||g.engagement_tier)}`:'';
   const url=g.url||g.group_url||'';
   return url
     ? `<a class="todo-group-link" href="${esc(url)}" target="_blank" rel="noopener">${label}${stars}</a>`
@@ -76,7 +81,7 @@ function renderCard(task={}) {
   const promptId=task.promptId||'';
   const dna=task.dnaLabel?`<div class="todo-dna-line">${esc(task.dnaLabel)}</div>`:'';
   const coverage=Array.isArray(task.groupCoverage)&&task.groupCoverage.length
-    ? `<div class="todo-coverage"><div class="todo-coverage-list">${task.groupCoverage.map(item=>`<div class="todo-coverage-row">${groupLink(item.group,{showStars:false})}<span class="todo-coverage-status ${item.covered?'is-covered':''}" aria-label="${item.covered?'Đã có bài':'Chưa có bài'}">${item.covered?'✓':'-'}</span></div>`).join('')}</div></div>`
+    ? `<div class="todo-coverage"><div class="todo-coverage-list">${task.groupCoverage.map(item=>`<div class="todo-coverage-row">${groupLink(item.group)}<span class="todo-coverage-status ${item.covered?'is-covered':''}" aria-label="${item.covered?'Đã có bài':'Chưa có bài'}">${item.covered?'✓':'-'}</span></div>`).join('')}</div></div>`
     : '';
   const posted=Array.isArray(task.postedGroups)&&task.postedGroups.length
     ? `<div class="todo-posted"><span>ĐÃ POST</span><div class="todo-posted-list">${task.postedGroups.map(item=>{
@@ -89,7 +94,7 @@ function renderCard(task={}) {
     ? `<div class="todo-where todo-where-groups"><span>ĐỀ XUẤT</span><div class="todo-group-list">${task.whereGroups.map(g=>groupLink(g)).join('')}</div></div>`
     : '';
   const source=task.sourceGroup
-    ? `<div class="todo-why-source">${groupLink(task.sourceGroup,{showStars:false})}${task.sourceMetrics?`<span>${esc(task.sourceMetrics)}</span>`:''}</div>`
+    ? `<div class="todo-why-source">${groupLink(task.sourceGroup)}${task.sourceMetrics?`<span>${esc(task.sourceMetrics)}</span>`:''}</div>`
     : '';
   return `<article class="todo-card todo-card-${esc(kind)} todo-card-state-${esc(status)}">
     <div class="todo-card-top todo-card-top-compact">
@@ -280,13 +285,13 @@ async function syncTodo(){
         sourceGroup:groupRef(best.group),
         sourceMetrics:`${fmt(best.likes)} likes · ${fmt(best.comments)} comments · ${fmt(best.shares)} shares`,
         why:openCount
-          ? `Viral lineage này còn ${openCount} group chưa cover. Danh sách giữ nguyên ưu tiên theo tier/fit hiện tại; ✓ chỉ đánh dấu group đã có bài.`
-          : 'Viral lineage này đã có bài ở toàn bộ group active hiện tại.',
+          ? `Nhóm biến thể này còn ${openCount} group chưa cover. Danh sách giữ nguyên ưu tiên theo tier/fit hiện tại; ✓ chỉ đánh dấu group đã có bài.`
+          : 'Nhóm biến thể này đã có bài ở toàn bộ group active hiện tại.',
       }));
       if(kpiTasks.length>=8)break;
     }
 
-    // Explore only after proven viral lineages.
+    // Explore only after proven nhóm biến thểs.
     const newTests=d.prompts
       .filter(p=>p.wins===0)
       .slice(0,2)
@@ -306,7 +311,7 @@ async function syncTodo(){
           dnaLabel:dnaIds(p.prompt?.dna).join(' · ')||String(p.prompt?.dna||'').trim(),
           promptQuote:safeQuote(p.prompt,180),
           groupCoverage,
-          why:'Quote mới/chưa có winner. Group vẫn được xếp theo tier để test sau các viral lineage ở trên.',
+          why:'Quote mới/chưa có winner. Group vẫn được xếp theo tier để test sau các nhóm biến thể ở trên.',
         });
       });
 

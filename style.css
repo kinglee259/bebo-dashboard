@@ -1689,3 +1689,46 @@ a.todo-group-link:hover{transform:translateY(-1px);border-color:rgba(var(--todo-
 @media (max-width:680px){
   .todo-coverage-list{grid-template-columns:1fr}
 }
+
+
+/* Todo readability pass: subtle alternating neon accents, consistent with dashboard. */
+.todo-section-kpi{
+  --todo-accent:217,197,138;
+  border-color:#423f31;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.16),0 0 22px rgba(217,197,138,.035)
+}
+.todo-section-cross{
+  --todo-accent:127,200,255;
+  border-color:#30404d;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.16),0 0 22px rgba(127,200,255,.045)
+}
+.todo-section-data{
+  --todo-accent:143,216,179;
+  border-color:#304139;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.16),0 0 22px rgba(143,216,179,.04)
+}
+.todo-section-discovery{
+  --todo-accent:105,205,220;
+  border-color:#304146;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 28px rgba(0,0,0,.16),0 0 22px rgba(105,205,220,.04)
+}
+.todo-section:nth-of-type(odd) .todo-card:nth-child(odd),
+.todo-section:nth-of-type(even) .todo-card:nth-child(even){
+  border-color:rgba(var(--todo-accent),.24);
+  box-shadow:inset 2px 0 0 rgba(var(--todo-accent),.26),0 4px 14px rgba(0,0,0,.15),0 0 14px rgba(var(--todo-accent),.025)
+}
+.todo-section:nth-of-type(odd) .todo-card:nth-child(even),
+.todo-section:nth-of-type(even) .todo-card:nth-child(odd){
+  border-color:#303945;
+  box-shadow:inset 2px 0 0 rgba(127,200,255,.16),0 4px 14px rgba(0,0,0,.14)
+}
+.todo-section .todo-step{
+  color:rgb(var(--todo-accent));
+  text-shadow:0 0 10px rgba(var(--todo-accent),.16)
+}
+.todo-coverage-row .group-tier,
+.todo-why-source .group-tier,
+.todo-group-list .group-tier,
+.todo-posted-row .group-tier{
+  margin-left:6px
+}
