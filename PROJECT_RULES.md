@@ -81,9 +81,9 @@ The commit message must:
 ## 10. Proxy post-time display
 
 - When a post has `time_is_signal=true`, keep it in counts and timelines.
-- Show its stored `submitted_at` as an approximate recorded-time value prefixed with **~** instead of hiding it as "No time".
-- The **~** marker means the time is a DB/reporting proxy and not a verified Facebook posting timestamp.
-- Where manual time correction is available, keep that correction control alongside the proxy time.
+- Display its stored `submitted_at` normally without a visible approximation marker such as **~**.
+- Keep `time_is_signal` as internal provenance only; do not expose proxy/around wording in the normal UI.
+- Where manual time correction is available, keep that correction control alongside the stored time.
 
 ## 11. Todo viral-card group limit
 
@@ -193,3 +193,19 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - No tab may trust an HH ID merely because another tab previously proposed or displayed it.
 - A file that was valid when created can become stale if another tab allocates IDs afterward; therefore DB uniqueness must be re-checked again at DB-write time.
 - If a collision is discovered in a batch, do not patch only one conflicting row. Recalculate the affected batch IDs from the current database state and verify the full batch again.
+
+
+## 16. Post-level pending approval warnings
+
+- `post_history.status='pending_approval'` is a **post-level** state and must not automatically change the Facebook Group workflow/status.
+- Pending posts count as posted for lineage/coverage and operational post history, so they must not be suggested for duplicate reposting.
+- Pending posts must be visibly flagged as a warning/follow-up item on operational pages that show the post (Home, Todo, Posts, Report).
+- Pending posts must not contribute engagement results, winners, baselines, prompt performance, DNA/mechanic performance, or other analytical intelligence until they are no longer pending.
+- Group-level `workflow_status='following_approval'` remains a separate state.
+
+## 17. Paused group visibility
+
+- `facebook_groups.posting_status='paused'` preserves the group, history, and engagement tier but excludes the group from active operations and KPI totals.
+- A paused group is visible only on Home inside the dedicated paused/follow-later block.
+- Paused groups must be removed from Todo, Posts, Report, Analysis/Intelligence, filters, recommendations, active group totals, and KPI calculations.
+- `posting_status='left'` remains distinct from paused.

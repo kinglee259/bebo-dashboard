@@ -174,7 +174,7 @@ async function loadDay(day){
   $('dateLabel').textContent = formatVnDate(start);
 
   const previousStart = vnDayStart(offset - 1);
-  const [postsRes, previousPostsRes] = await Promise.all([
+  const [postsRes, previousPostsRes, pendingRes] = await Promise.all([
     supabase.from('post_history')
       .select('id,group_id,prompt_code,status,submitted_at,time_is_signal')
       .gte('submitted_at', start.toISOString())
@@ -182,10 +182,15 @@ async function loadDay(day){
     supabase.from('post_history')
       .select('id,group_id,submitted_at')
       .gte('submitted_at', previousStart.toISOString())
-      .lt('submitted_at', start.toISOString())
+      .lt('submitted_at', start.toISOString()),
+    supabase.from('post_history')
+      .select('id,group_id,prompt_code,status,submitted_at')
+      .eq('status','pending_approval')
+      .order('submitted_at',{ascending:true})
   ]);
   if(postsRes.error) throw postsRes.error;
   if(previousPostsRes.error) throw previousPostsRes.error;
+  if(pendingRes.error) throw pendingRes.error;
 
   const posts = postsRes.data || [];
   const previousPosts = (previousPostsRes.data || []).filter(p => p.group_id !== null);
@@ -212,6 +217,8 @@ async function loadDay(day){
 
   const activeGroups = allGroups.filter(g => g.posting_status === 'active');
   const pausedGroups = allGroups.filter(g => g.posting_status === 'paused');
+  const activeGroupIds = new Set(activeGroups.map(g => g.id));
+  const pendingPosts = (pendingRes.data || []).filter(p => p.group_id === null || activeGroupIds.has(p.group_id));
   const eligibleGroups = activeGroups.filter(g => effectiveWorkflow(g) === 'active');
   const excludedGroups = activeGroups.filter(g => effectiveWorkflow(g) !== 'active');
   const eligibleIds = new Set(eligibleGroups.map(g => g.id));
@@ -266,7 +273,17 @@ async function loadDay(day){
     ? newGroups.map(growthGroupRow).join('')
     : '<div class="growth-empty">Không có group mới trong ngày này.</div>';
 
-  const attention = newGroups
+  const pendingAttention = pendingPosts.map(p => {
+    const g = activeGroups.find(x => x.id === p.group_id);
+    return {
+      g,
+      priority:-1,
+      text:`Pending approval · ${p.prompt_code || 'Post'} · cần check`,
+      label:g ? `${g.group_code} · ${g.group_name}` : (p.prompt_code || 'Post pending')
+    };
+  });
+
+  const attention = [...pendingAttention, ...newGroups
     .map(g => {
       const count = countFor(g);
       const workflow = effectiveWorkflow(g);
@@ -276,12 +293,12 @@ async function loadDay(day){
       if(count < DAILY_MIN_POSTS) return {g,priority:3,text:`${count}/${DAILY_MIN_POSTS} bài KPI hôm nay`};
       return null;
     })
-    .filter(Boolean)
+    .filter(Boolean)]
     .sort((a,b)=>a.priority-b.priority)
     .slice(0,3);
 
   $('growthAttention').innerHTML = attention.length
-    ? attention.map(item => `<article class="growth-attention-row"><div><strong>${esc(item.g.group_code)} · ${esc(item.g.group_name)}</strong><span>${esc(item.text)}</span></div></article>`).join('')
+    ? attention.map(item => `<article class="growth-attention-row ${item.priority<0?'is-warning':''}"><div><strong>${esc(item.label || (item.g ? item.g.group_code+' · '+item.g.group_name : 'Pending approval'))}</strong><span>${esc(item.text)}</span></div></article>`).join('')
     : '<div class="growth-empty">Không có group mới nào cần xử lý thêm.</div>';
 
   const testedNewCount = newGroups.filter(g => countFor(g) > 0).length;
@@ -297,6 +314,11 @@ async function loadDay(day){
       detail: previousPosts.length === 0
         ? 'Hôm qua không có post'
         : `${previousUpdatedCount}/${previousPosts.length} post đã cập nhật hôm nay`
+    },
+    {
+      done: pendingPosts.length === 0,
+      label: 'Check post đang Pending approval',
+      detail: pendingPosts.length === 0 ? 'Không còn post chờ duyệt' : `${pendingPosts.length} post cần follow`
     },
     {
       done: newGroupCount >= NEW_GROUP_DAILY_TARGET,

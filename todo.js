@@ -208,10 +208,11 @@ async function syncTodo(){
   const groups=groupRes.data||[];
   const eligible=groups.filter(g=>effectiveWorkflow(g)==='active');
   const insightById=new Map(d.groups.map(g=>[g.id,g]));
+  const workflowPosts=d.allPosts||d.posts;
   const postsByGroup=new Map();
   const todayPostsByGroup=new Map();
 
-  for(const p of d.posts.filter(p=>p.group_id)){
+  for(const p of workflowPosts.filter(p=>p.group_id)){
     if(!postsByGroup.has(p.group_id))postsByGroup.set(p.group_id,[]);
     postsByGroup.get(p.group_id).push(p);
     if(p.submitted_at&&vnDateKey(new Date(p.submitted_at))===today){
@@ -251,7 +252,7 @@ async function syncTodo(){
       if(!lineageMap.has(key))lineageMap.set(key,{key,members:[],posts:[]});
       lineageMap.get(key).members.push(p);
     }
-    for(const post of d.posts){
+    for(const post of workflowPosts){
       const key=lineageKey(post.prompt);
       if(!key)continue;
       if(!lineageMap.has(key))lineageMap.set(key,{key,members:[],posts:[]});
@@ -367,7 +368,7 @@ async function syncTodo(){
     }
 
     // B. Pending approval stays visible so it is not accidentally reposted.
-    const pending=d.posts
+    const pending=workflowPosts
       .filter(p=>p.status==='pending_approval')
       .sort((a,b)=>new Date(b.submitted_at||0)-new Date(a.submitted_at||0))
       .slice(0,2);

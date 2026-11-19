@@ -73,13 +73,13 @@ export async function loadIntelligence(){
   ]);
   for(const r of [postRes,groupRes,promptRes,metricRes])if(r.error)throw r.error;
 
-  const groups=new Map((groupRes.data||[]).filter(g=>g.posting_status!=='left').map(g=>[g.id,g]));
+  const groups=new Map((groupRes.data||[]).filter(g=>g.posting_status==='active').map(g=>[g.id,g]));
   const promptById=new Map((promptRes.data||[]).map(p=>[p.id,p]));
   const promptByCode=new Map((promptRes.data||[]).map(p=>[p.prompt_id,p]));
   const latest=new Map();
   for(const m of metricRes.data||[])if(!latest.has(m.post_history_id))latest.set(m.post_history_id,m);
 
-  let posts=(postRes.data||[])
+  const allPosts=(postRes.data||[])
     .filter(p=>p.group_id===null||groups.has(p.group_id))
     .map(p=>{
       const m=latest.get(p.id)||{};
@@ -88,6 +88,7 @@ export async function loadIntelligence(){
       const likes=+m.likes_count||0,comments=+m.comments_count||0,shares=+m.shares_count||0;
       return {...p,prompt,group,likes,comments,shares,engagement:likes+comments+shares,family:familyOf(prompt)};
     });
+  let posts=allPosts.filter(p=>p.status!=='pending_approval');
 
   const groupPosts=new Map();
   for(const p of posts.filter(x=>x.group)){
@@ -139,5 +140,5 @@ export async function loadIntelligence(){
     .sort((a,b)=>(b.wins-a.wins)||(b.avgEngagement-a.avgEngagement));
 
   const totals={posts:posts.length,groups:groupRows.length,prompts:promptRows.length,likes:posts.reduce((a,x)=>a+x.likes,0),comments:posts.reduce((a,x)=>a+x.comments,0),shares:posts.reduce((a,x)=>a+x.shares,0)};
-  return {posts,groups:groupRows,prompts:promptRows,mechanics:mechanicRows,totals};
+  return {posts,allPosts,groups:groupRows,prompts:promptRows,mechanics:mechanicRows,totals};
 }

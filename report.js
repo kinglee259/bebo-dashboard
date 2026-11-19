@@ -95,7 +95,9 @@ async function savePostTime(input){
   const raw=input.value;
   if(!postId||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(raw))return;
   const parts=raw.split(':').map(Number);
-  const start=vnDayStart(-1);
+  const start=selectedDay==='custom'
+    ? vnDateStart(customDateKey)
+    : vnDayStart(selectedDay==='today'?0:-1);
   const submitted=new Date(start.getTime()+parts[0]*3600_000+parts[1]*60_000);
   input.disabled=true;
   const status=document.querySelector('[data-time-state="'+postId+'"]');
@@ -150,9 +152,10 @@ function renderRow(p){
     const field=pair[0],label=pair[1];
     return '<td data-label="'+label+'" class="report-metric-cell"><input class="metric-input" type="number" inputmode="numeric" min="0" step="1" data-post-id="'+p.id+'" data-field="'+field+'" value="'+esc(val(m?.[field]))+'" aria-label="'+label+' for '+esc(code)+'"></td>';
   }).join('');
-  return '<tr class="report-data-row">'+
+  const pending=p.status==='pending_approval';
+  return '<tr class="report-data-row'+(pending?' post-pending-row':'')+'">'+
     '<td data-label="Time" class="report-time '+(p.time_is_signal?'missing-time':'')+'">'+timeHtml+'</td>'+
-    '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong></td>'+
+    '<td data-label="Prompt" class="report-prompt"><strong>'+esc(code)+'</strong>'+(pending?'<span class="post-pending-badge">Pending approval</span>':'')+'</td>'+
     '<td data-label="Quote" class="report-quote" title="'+esc(quote)+'">'+esc(quote)+'</td>'+
     '<td data-label="Group" class="report-group">'+groupHtml+'</td>'+
     metrics+
@@ -166,7 +169,8 @@ function render(){
   const table=document.querySelector('.report-table');
   table?.classList.toggle('grouped-by-group',groupBy==='group');
   const list=[...loadedPosts];
-  $('reportCount').textContent=list.length+' post'+(list.length===1?'':'s');
+  const pendingCount=list.filter(p=>p.status==='pending_approval').length;
+  $('reportCount').textContent=list.length+' post'+(list.length===1?'':'s')+(pendingCount?' · '+pendingCount+' pending':'');
   $('reportEmpty').classList.toggle('hidden',list.length>0);
   if(!list.length){$('reportRows').innerHTML='';return;}
 
@@ -230,7 +234,7 @@ async function load(){
   $('reportEmpty').textContent='No posts found for this day.';
 
   const postsQuery=supabase.from('post_history')
-    .select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,group_mapping_status,notes')
+    .select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,status,group_mapping_status,notes')
     .gte('submitted_at',start.toISOString()).lt('submitted_at',end.toISOString())
     .order('submitted_at',{ascending:true});
 
@@ -244,7 +248,7 @@ async function load(){
   const postIds=loadedPosts.map(p=>p.id);
 
   const [gRes,pIdRes,pCodeRes,mRes]=await Promise.all([
-    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').in('id',groupIds):Promise.resolve({data:[],error:null}),
+    groupIds.length?supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').in('id',groupIds).eq('posting_status','active'):Promise.resolve({data:[],error:null}),
     promptIds.length?supabase.from('prompts').select('id,prompt_id,title,content').in('id',promptIds):Promise.resolve({data:[],error:null}),
     promptCodes.length?supabase.from('prompts').select('id,prompt_id,title,content').in('prompt_id',promptCodes):Promise.resolve({data:[],error:null}),
     postIds.length?supabase.from('post_metrics').select('*').in('post_history_id',postIds).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null})
@@ -253,6 +257,7 @@ async function load(){
 
   const allKnownGroups=gRes.data||[];
   groups=new Map(allKnownGroups.map(x=>[x.id,x]));
+  loadedPosts=loadedPosts.filter(p=>p.group_id===null||groups.has(p.group_id));
   promptsById=new Map((pIdRes.data||[]).map(x=>[x.id,x]));
   promptsByCode=new Map((pCodeRes.data||[]).map(x=>[x.prompt_id,x]));
   latestMetric=new Map();

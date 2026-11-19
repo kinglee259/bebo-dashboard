@@ -51,9 +51,10 @@ function render(){
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener"><strong>'+esc(group.group_code)+'</strong><span>'+esc(group.group_name)+'</span></a>'
       : '—';
     const tier=group?.engagement_tier||'unranked';
-    return '<tr class="history-row tier-row-'+esc(tier)+'">'+
+    const pending=post.status==='pending_approval';
+    return '<tr class="history-row tier-row-'+esc(tier)+(pending?' post-pending-row':'')+'">'+
       '<td data-label="Date / Time" class="history-time '+(post.time_is_signal?'signal-time':'')+'">'+esc(fmtDateTime(post.submitted_at,post.time_is_signal))+'</td>'+
-      '<td data-label="Prompt" class="history-prompt"><strong>'+esc(code)+'</strong><span>'+esc(title)+'</span></td>'+
+      '<td data-label="Prompt" class="history-prompt"><strong>'+esc(code)+'</strong>'+(pending?'<em class="post-pending-badge">Pending approval</em>':'')+'<span>'+esc(title)+'</span></td>'+
       '<td data-label="Group" class="history-group">'+groupHtml+'</td>'+
       '<td data-label="Like" class="history-metric">👍 '+fmtNumber(metric?.likes_count)+'</td>'+
       '<td data-label="Comment" class="history-metric">💬 '+(metric?.comments_is_lower_bound?'≥':'')+fmtNumber(metric?.comments_count)+'</td>'+
@@ -63,7 +64,7 @@ function render(){
 
 async function load(){
   try{
-    let postsQuery=supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal');
+    let postsQuery=supabase.from('post_history').select('id,group_id,prompt_id,prompt_code,submitted_at,time_is_signal,status');
     if(selectedDate){
       const start=vnDateStart(selectedDate);
       const end=new Date(start.getTime()+86400_000);
@@ -73,14 +74,14 @@ async function load(){
 
     const [postsRes,groupsRes,promptsRes]=await Promise.all([
       postsQuery,
-      supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').order('group_code',{ascending:true}),
+      supabase.from('facebook_groups').select('id,group_code,group_name,group_url,posting_status,engagement_tier').eq('posting_status','active').order('group_code',{ascending:true}),
       supabase.from('prompts').select('id,prompt_id,title')
     ]);
     for(const r of [postsRes,groupsRes,promptsRes]) if(r.error) throw r.error;
 
     const allKnownGroups=groupsRes.data||[];
-    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null);
     groupsById=new Map(allKnownGroups.map(g=>[g.id,g]));
+    allPosts=(postsRes.data||[]).filter(p=>p.group_id!==null && groupsById.has(p.group_id));
     promptsById=new Map((promptsRes.data||[]).map(p=>[p.id,p]));
     promptsByCode=new Map((promptsRes.data||[]).map(p=>[p.prompt_id,p]));
 
