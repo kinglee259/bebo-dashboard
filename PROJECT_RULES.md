@@ -119,3 +119,77 @@ The commit message must:
   - `post_history` points to the clone record;
   - Todo lineage coverage resolves the posted group as covered.
 - For Todo coverage, `submitted`, `pending_approval`, and `approved` count as posted. Pending approval does not block the coverage checkmark.
+
+
+## 15. Project-wide prompt creation & DB pre-flight — HARD GATE
+
+This rule is mandatory across the entire **View ngoại** project, across every tab/chat/workflow that creates, clones, revises, exports, or writes prompt/post data.
+
+### 15.1 Mandatory rule read before every prompt operation
+
+- Before creating **any new prompt**, clone, revision, TXT/batch prompt file, or prompt-related artifact, read the current `PROJECT_RULES.md` first.
+- Before every **add pr db**, **update pr db**, prompt insert/update, or post-history write, read the current `PROJECT_RULES.md` first.
+- This is a hard gate, not a suggestion. Do not create or write prompt/post data first and check rules afterward.
+- Do not rely on another tab/chat saying what the current rule or next ID is. Every workflow must independently re-read the shared project rules before acting.
+
+### 15.2 HH namespace allocation before creating a new prompt
+
+Before assigning any new `HHxxxxx` ID:
+
+1. Query the current database and inspect the real HH namespace.
+2. Determine the highest HH numeric ID currently present.
+3. Check that the intended new ID does not already exist.
+4. For a genuinely new concept, assign the next free HH ID after the current database maximum.
+5. For a revision, keep the existing HH ID and increment only the version.
+6. For a clone/variant, assign a new HH ID and retain the source/root lineage needed for the later DB write.
+7. For a batch of N new prompts, reserve a contiguous range starting after the current DB maximum and verify:
+   - no ID collides with the DB;
+   - no IDs collide with each other inside the batch;
+   - no previously assigned concept ID is reused.
+
+Do not infer the next HH ID from memory, nearby chat context, an old TXT file, a previous assistant message, or a stale batch.
+
+### 15.3 Pre-flight before every prompt DB write
+
+Before inserting or updating a prompt/post:
+
+1. Re-read `PROJECT_RULES.md`.
+2. Query the exact `prompt_id` that is about to be written.
+3. If the ID already belongs to a different concept, **STOP**. Do not overwrite and do not insert a duplicate.
+4. If the operation is a revision/update of the same prompt, preserve its identity and history.
+5. If the operation is a clone/variant, resolve and write both `source_prompt_id` and `root_prompt_id` according to the lineage rule.
+6. Resolve the target Facebook group from durable evidence such as Facebook Group ID / canonical group URL when available; do not rely only on a guessed name match.
+7. Write prompt and `post_history` consistently.
+8. If the exact Facebook post time is unavailable, use the user-report timestamp as a proxy and set `time_is_signal=true`.
+
+### 15.4 Mandatory verification after every DB write
+
+A prompt/post DB operation is not complete until all applicable checks pass:
+
+- Query the written `prompt_id` again.
+- Confirm the ID resolves to the intended prompt and not another concept.
+- Confirm there is no unintended duplicate prompt record for that ID.
+- Confirm title/content/version match the intended prompt.
+- Confirm `post_history.prompt_id` points to the correct DB prompt record.
+- Confirm the mapped Facebook group is correct.
+- For clones/variants, confirm `source_prompt_id` and `root_prompt_id` are correct.
+- If Todo lineage coverage is affected, confirm the posted group resolves as covered under the lineage.
+- Do not report the write as complete merely because the insert/update call returned success.
+
+### 15.5 Project-wide source-of-truth order
+
+When prompt identity, IDs, lineage, posting history, or rules conflict, use this precedence:
+
+1. **Current database state**
+2. **Current `PROJECT_RULES.md`**
+3. **Project files / durable project data**
+4. **Conversation context / memory**
+
+Conversation memory is never authoritative for allocating a new HH ID when the database can be checked.
+
+### 15.6 Cross-tab consistency requirement
+
+- Every tab/chat/workflow must perform its own fresh pre-flight before creating a prompt or writing prompt/post data.
+- No tab may trust an HH ID merely because another tab previously proposed or displayed it.
+- A file that was valid when created can become stale if another tab allocates IDs afterward; therefore DB uniqueness must be re-checked again at DB-write time.
+- If a collision is discovered in a batch, do not patch only one conflicting row. Recalculate the affected batch IDs from the current database state and verify the full batch again.
