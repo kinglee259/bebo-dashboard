@@ -1,8 +1,9 @@
 import { loadIntelligence, esc, groupAction } from './intelligence.js';
 const $=id=>document.getElementById(id);
+const tierDisplay=t=>String(t||'').toLowerCase()==='unranked'?'◌':String(t||'').toUpperCase();
 try{
   const d=await loadIntelligence();
-  $('fitRows').innerHTML=d.groups.map(g=>'<tr><td class="identity-cell"><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong></td><td><span class="tier-chip tier-'+esc(g.tier)+'">'+esc(g.tier.toUpperCase())+'</span></td><td>'+g.posts+'</td><td>'+g.avgEngagement+'</td><td>'+esc(g.topFamily?.family||'Chưa rõ')+'</td><td>'+esc(groupAction(g))+'</td></tr>').join('');
+  $('fitRows').innerHTML=d.groups.map(g=>'<tr><td class="identity-cell"><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong></td><td><span class="tier-chip tier-'+esc(g.tier)+'">'+esc(tierDisplay(g.tier))+'</span></td><td>'+g.posts+'</td><td>'+g.avgEngagement+'</td><td>'+esc(g.topFamily?.family||'Chưa rõ')+'</td><td>'+esc(groupAction(g))+'</td></tr>').join('');
 
   const core=d.groups.filter(g=>g.tier==='s'||g.tier==='a').slice(0,6);
   $('priorityGroups').innerHTML=core.map(g=>'<article><div><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong><span>'+g.posts+' bài · trung bình '+g.avgEngagement+' · hợp '+esc(g.topFamily?.family||'chưa rõ')+'</span></div><b>'+esc(groupAction(g))+'</b></article>').join('')||'<p class="analysis-empty">Chưa có nhóm S/A.</p>';

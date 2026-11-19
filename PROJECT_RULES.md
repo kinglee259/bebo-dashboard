@@ -219,3 +219,10 @@ Conversation memory is never authoritative for allocating a new HH ID when the d
 - A `pending_approval` post in Metrics is read-only: disable Like / Comment / Share inputs and the check button until it is no longer pending.
 - The Home checklist KPI for updating yesterday's metrics excludes `pending_approval` posts from its denominator because no live reaction data can be entered yet.
 - Active Home groups with one or more pending posts must show a restrained amber pulse/badge so the user can manage approval follow-up without changing the group's workflow status.
+
+
+## 19. Unranked tier icon
+
+- Do not show visible `UNRANKED`, `Unranked`, or `---` text for a group with no assigned tier.
+- Use the single neutral icon **◌** everywhere the unranked tier is displayed.
+- Accessibility/title text may say **Chưa xếp hạng**; the internal `unranked` value/class may remain for logic and styling.

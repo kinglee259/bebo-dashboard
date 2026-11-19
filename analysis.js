@@ -1,5 +1,6 @@
 import { loadIntelligence, esc, fmt, promptQuote, groupAction, promptAction, signalText } from './intelligence.js';
 const $=id=>document.getElementById(id);
+const tierDisplay=t=>String(t||'').toLowerCase()==='unranked'?'◌':String(t||'').toUpperCase();
 try{
   const d=await loadIntelligence();
   const winners=d.prompts.filter(p=>p.wins>0);
@@ -16,7 +17,7 @@ try{
     return '<tr><td class="identity-cell"><strong>'+esc(p.promptId)+'</strong><span>'+esc(quote)+'</span></td><td><strong class="result-main">'+fmt(p.comments)+' bình luận · '+fmt(p.shares)+' chia sẻ</strong><span class="result-sub">'+esc(signalText(p))+'</span></td><td>'+p.posts+' lần · '+p.groupsTested+' nhóm</td><td>'+esc(promptAction(p))+'</td></tr>';
   }).join('')||'<tr><td colspan="4" class="analysis-empty">Chưa có bài nào đủ tín hiệu.</td></tr>';
 
-  $('groupRows').innerHTML=d.groups.slice(0,12).map(g=>'<tr><td class="identity-cell"><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong></td><td><span class="tier-chip tier-'+esc(g.tier)+'">'+esc(g.tier.toUpperCase())+'</span></td><td>'+g.posts+'</td><td>'+g.avgEngagement+'</td><td>'+esc(g.topFamily?.family||'Chưa rõ')+'</td><td>'+esc(groupAction(g))+'</td></tr>').join('');
+  $('groupRows').innerHTML=d.groups.slice(0,12).map(g=>'<tr><td class="identity-cell"><strong>'+esc(g.group_code)+' · '+esc(g.group_name)+'</strong></td><td><span class="tier-chip tier-'+esc(g.tier)+'">'+esc(tierDisplay(g.tier))+'</span></td><td>'+g.posts+'</td><td>'+g.avgEngagement+'</td><td>'+esc(g.topFamily?.family||'Chưa rõ')+'</td><td>'+esc(groupAction(g))+'</td></tr>').join('');
 
   const actions=[];
   const top=d.prompts[0];

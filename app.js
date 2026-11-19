@@ -155,7 +155,7 @@ function engagementStar(group){
   if(tier==='a') return '<span class="group-tier tier-a" title="A · strong engagement" aria-label="A tier">★★</span>';
   if(tier==='b') return '<span class="group-tier tier-b" title="B · light engagement" aria-label="B tier">★</span>';
   if(tier==='c') return '<span class="group-tier tier-c" title="C · tested, weak" aria-label="C tier">--</span>';
-  return '<span class="group-tier tier-unranked" title="Unranked · follow" aria-label="Unranked">---</span>';
+  return '<span class="group-tier tier-unranked" title="Chưa xếp hạng" aria-label="Chưa xếp hạng">◌</span>';
 }
 
 async function loadGroups(){

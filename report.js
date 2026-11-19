@@ -128,6 +128,7 @@ function shortGroupName(name=''){
   return words.length>3?words.slice(0,3).join(' ')+'…':words.join(' ');
 }
 function groupKey(post){return post.group_id?'g:'+post.group_id:'u:'+unresolvedGroupLabel(post);}
+function tierDisplay(tier){return String(tier||'').toLowerCase()==='unranked'?'◌':String(tier||'').toUpperCase();}
 
 function postComparator(a,b,sort){
   const ga=groupLabel(a),gb=groupLabel(b);
@@ -205,7 +206,7 @@ function render(){
       ? '<a href="'+esc(group.group_url||'#')+'" target="_blank" rel="noopener">'+esc(group.group_code)+' · '+esc(group.group_name)+'</a>'
       : esc(unresolvedGroupLabel(sample));
     const tier=group?.engagement_tier||'unranked';
-    chunks.push('<tr class="report-group-header tier-header-'+esc(tier)+'"><td colspan="8"><div><strong>'+groupTitle+'</strong><span class="report-tier-label">'+esc(String(tier).toUpperCase())+'</span></div></td></tr>');
+    chunks.push('<tr class="report-group-header tier-header-'+esc(tier)+'"><td colspan="8"><div><strong>'+groupTitle+'</strong><span class="report-tier-label">'+esc(tierDisplay(tier))+'</span></div></td></tr>');
     chunks.push(rows.map(renderRow).join(''));
   }
   $('reportRows').innerHTML=chunks.join('');
