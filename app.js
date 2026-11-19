@@ -258,12 +258,36 @@ async function loadDay(day){
     ? attention.map(item => `<article class="growth-attention-row"><div><strong>${esc(item.g.group_code)} · ${esc(item.g.group_name)}</strong><span>${esc(item.text)}</span></div></article>`).join('')
     : '<div class="growth-empty">Không có group mới nào cần xử lý thêm.</div>';
 
-  const untestedNew = newGroups.filter(g => countFor(g) === 0 && effectiveWorkflow(g) === 'active').length;
-  $('growthNext').textContent = newGroupRemaining > 0
-    ? `Còn ${newGroupRemaining} group để đạt KPI group mới hôm nay.`
-    : untestedNew > 0
-      ? `Đã đủ KPI group mới · ưu tiên test ${untestedNew} group mới chưa có bài.`
-      : 'Đã đủ KPI group mới và không còn group mới chưa test.';
+  const testedNewCount = newGroups.filter(g => countFor(g) > 0).length;
+  const checklistItems = [
+    {
+      done: postsStillNeeded === 0,
+      label: 'Đăng đủ KPI group hôm nay',
+      detail: postsStillNeeded === 0 ? 'Đã hoàn thành' : `Còn ${postsStillNeeded} bài`
+    },
+    {
+      done: newGroupCount >= NEW_GROUP_DAILY_TARGET,
+      label: 'Tìm đủ 5 group mới',
+      detail: `${Math.min(newGroupCount, NEW_GROUP_DAILY_TARGET)}/${NEW_GROUP_DAILY_TARGET}`
+    },
+    {
+      done: testedNewCount >= 2,
+      label: 'Test ít nhất 2 group mới',
+      detail: `${Math.min(testedNewCount, 2)}/2`
+    },
+    {
+      done: excludedGroups.length === 0,
+      label: 'Xử lý group đang Following / Review',
+      detail: excludedGroups.length === 0 ? 'Không còn group chờ xử lý' : `${excludedGroups.length} group đang chờ`
+    }
+  ];
+
+  $('growthChecklist').innerHTML = checklistItems.map(item => `
+    <article class="growth-check-item ${item.done?'is-done':'is-pending'}">
+      <span class="growth-check-mark" aria-hidden="true">${item.done?'✓':'-'}</span>
+      <div><strong>${esc(item.label)}</strong><small>${esc(item.detail)}</small></div>
+    </article>`
+  ).join('');
 
   const rows = allGroups.map(g => {
     const count = countFor(g);
