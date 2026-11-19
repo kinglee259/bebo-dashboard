@@ -9,6 +9,7 @@ const $ = (id) => document.getElementById(id);
 let selectedDay = 'today';
 let allGroups = [];
 let currentDateKey = '';
+const NEW_GROUP_DAILY_TARGET = 5;
 
 function vnDayStart(dayOffset = 0) {
   const now = new Date();
@@ -159,7 +160,7 @@ function engagementStar(group){
 
 async function loadGroups(){
   const { data, error } = await supabase.from('facebook_groups')
-    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,engagement_tier')
+    .select('id,group_code,group_name,group_url,approval_mode,posting_status,workflow_status,workflow_status_since,engagement_tier,created_at')
     .eq('posting_status','active');
   if(error) throw error;
   allGroups = data || [];
@@ -212,6 +213,57 @@ async function loadDay(day){
   $('progressText').textContent = `${effectiveProgress} / ${minGoal}`;
   $('progressBar').style.width = `${Math.min(100, minGoal ? effectiveProgress/minGoal*100 : 0)}%`;
   $('kpiRange').textContent = `${DAILY_TARGET_POSTS} posts / active KPI group`;
+
+  // Growth panel: groups added to the DB during the selected VN day.
+  const newGroups = allGroups
+    .filter(g => {
+      if(!g.created_at) return false;
+      const created = new Date(g.created_at);
+      return created >= start && created < end;
+    })
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const newGroupCount = newGroups.length;
+  const newGroupRemaining = Math.max(0, NEW_GROUP_DAILY_TARGET - newGroupCount);
+  $('newGroupProgressText').textContent = `${newGroupCount} / ${NEW_GROUP_DAILY_TARGET}`;
+  $('newGroupProgressBar').style.width = `${Math.min(100, newGroupCount / NEW_GROUP_DAILY_TARGET * 100)}%`;
+
+  const growthGroupRow = g => `
+    <article class="growth-group-row">
+      <div>
+        <strong>${esc(g.group_code)}</strong>
+        <a href="${esc(g.group_url)}" target="_blank" rel="noopener">${esc(g.group_name)}</a>
+      </div>
+      ${engagementStar(g)}
+    </article>`;
+
+  $('newGroupsList').innerHTML = newGroups.length
+    ? newGroups.map(growthGroupRow).join('')
+    : '<div class="growth-empty">Không có group mới trong ngày này.</div>';
+
+  const attention = newGroups
+    .map(g => {
+      const count = countFor(g);
+      const workflow = effectiveWorkflow(g);
+      if(workflow !== 'active') return {g,priority:0,text:workflow==='review_48h'?'Đã chờ duyệt 48h+ · cần review':'Đang chờ duyệt · chưa cần đăng lại'};
+      if(count === 0) return {g,priority:1,text:'Chưa có bài test trong ngày'};
+      if(!g.engagement_tier) return {g,priority:2,text:`${count} bài · chưa đủ dữ liệu để xếp tier`};
+      if(count < DAILY_MIN_POSTS) return {g,priority:3,text:`${count}/${DAILY_MIN_POSTS} bài KPI hôm nay`};
+      return null;
+    })
+    .filter(Boolean)
+    .sort((a,b)=>a.priority-b.priority)
+    .slice(0,3);
+
+  $('growthAttention').innerHTML = attention.length
+    ? attention.map(item => `<article class="growth-attention-row"><div><strong>${esc(item.g.group_code)} · ${esc(item.g.group_name)}</strong><span>${esc(item.text)}</span></div></article>`).join('')
+    : '<div class="growth-empty">Không có group mới nào cần xử lý thêm.</div>';
+
+  const untestedNew = newGroups.filter(g => countFor(g) === 0 && effectiveWorkflow(g) === 'active').length;
+  $('growthNext').textContent = newGroupRemaining > 0
+    ? `Còn ${newGroupRemaining} group để đạt KPI group mới hôm nay.`
+    : untestedNew > 0
+      ? `Đã đủ KPI group mới · ưu tiên test ${untestedNew} group mới chưa có bài.`
+      : 'Đã đủ KPI group mới và không còn group mới chưa test.';
 
   const rows = allGroups.map(g => {
     const count = countFor(g);

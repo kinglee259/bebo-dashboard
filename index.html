@@ -56,37 +56,60 @@
         <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
       </section>
 
-      <section class="list-panel" id="groupsPanel">
-        <div class="list-head list-head-legend">
-          <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
-        </div>
-        <div class="tier-block tier-block-priority">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
-              <tbody id="priorityRows"></tbody>
-            </table>
+      <div class="home-ops-grid">
+        <section class="list-panel" id="groupsPanel">
+          <div class="list-head list-head-legend">
+            <div class="legend"><span class="dot auto"></span> Auto <span class="dot manual"></span> Manual <span class="dot unknown"></span> Unknown</div>
           </div>
-        </div>
+          <div class="tier-block tier-block-priority">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+                <tbody id="priorityRows"></tbody>
+              </table>
+            </div>
+          </div>
 
-        <div class="tier-block tier-block-signal">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
-              <tbody id="signalRows"></tbody>
-            </table>
+          <div class="tier-block tier-block-signal">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+                <tbody id="signalRows"></tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div class="tier-block tier-block-follow">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
-              <tbody id="followRows"></tbody>
-            </table>
+          <div class="tier-block tier-block-follow">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Group</th><th>Approval</th><th>Posts</th><th>Status</th><th></th></tr></thead>
+                <tbody id="followRows"></tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <aside class="growth-panel" aria-label="Daily group growth">
+          <section class="growth-block growth-new">
+            <div class="growth-head">
+              <div><span class="growth-kicker">GROWTH</span><h2>Group mới hôm nay</h2></div>
+              <strong id="newGroupProgressText">0 / 5</strong>
+            </div>
+            <div class="growth-progress-track"><div id="newGroupProgressBar" class="growth-progress-bar"></div></div>
+            <div id="newGroupsList" class="growth-group-list"></div>
+          </section>
+
+          <section class="growth-block">
+            <div class="growth-subhead"><h3>Group cần chú ý</h3><span>tối đa 3</span></div>
+            <div id="growthAttention" class="growth-attention-list"></div>
+          </section>
+
+          <section class="growth-block growth-next-block">
+            <span class="growth-kicker">MỤC TIÊU TIẾP THEO</span>
+            <p id="growthNext">—</p>
+          </section>
+        </aside>
+      </div>
     </main>
   </div>
 
