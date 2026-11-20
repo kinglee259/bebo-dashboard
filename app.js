@@ -94,34 +94,6 @@ async function updateApproval(selectEl){
   await refresh();
 }
 
-async function removeGroup(button){
-  const groupId = Number(button.dataset.groupId);
-  const groupName = button.dataset.groupName || 'this group';
-  if(!groupId) return;
-  if(!confirm(`Remove "${groupName}" from the active dashboard? Post history will be kept.`)) return;
-
-  button.disabled = true;
-  const { data, error } = await supabase.from('facebook_groups')
-    .update({
-      posting_status:'left',
-      workflow_status:'active',
-      workflow_status_since:null,
-      updated_at:new Date().toISOString()
-    })
-    .eq('id', groupId)
-    .select('id,posting_status')
-    .single();
-
-  if(error || !data){
-    button.disabled = false;
-    showToast(error?.message || 'Could not remove group', 'error');
-    return;
-  }
-
-  showToast('Group removed');
-  await refresh();
-}
-
 function effectiveWorkflow(group){
   if(group.workflow_status === 'following_approval' && group.workflow_status_since){
     const ageMs = Date.now() - new Date(group.workflow_status_since).getTime();
@@ -371,7 +343,6 @@ async function loadDay(day){
         <td data-label="Approval">${approvalSelect(g)}</td>
         <td data-label="Posts">${postCell}</td>
         <td data-label="Status" class="status ${g.state.cls} ${g.state.tip ? 'status-tip-target' : ''}" ${g.state.tip ? `data-tip="${esc(g.state.tip)}" tabindex="0"` : ''}><span class="status-label">${g.state.label}</span></td>
-        <td data-label="Action" class="row-actions"><button class="remove-group-btn" data-action="remove" data-group-id="${g.id}" data-group-name="${esc(g.group_name)}" title="Remove group" aria-label="Remove ${esc(g.group_name)}">×</button></td>
       </tr>`;
   };
   const priority=rows.filter(g=>g.engagement_tier==='s'||g.engagement_tier==='a');
@@ -417,10 +388,6 @@ $('postsCard').addEventListener('click', () => {
 $('groupsPanel').addEventListener('change', (e) => {
   const approval = e.target.closest('[data-action="approval"]');
   if(approval) updateApproval(approval);
-});
-$('groupsPanel').addEventListener('click', (e) => {
-  const button = e.target.closest('[data-action="remove"]');
-  if(button) removeGroup(button);
 });
 document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', async () => {
   selectedDay = btn.dataset.day;
